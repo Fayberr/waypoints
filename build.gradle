@@ -30,8 +30,10 @@ dependencies {
 	compileOnly "com.terraformersmc:modmenu:18.0.0"
 	compileOnly "me.shedaniel.cloth:cloth-config-fabric:26.1.154"
 
-	// Fayber Config (optional, compileOnly; preferred over Cloth when installed at runtime)
+	// Fayber Config (optional, compileOnly; preferred over Cloth when installed at runtime).
+	// runtimeOnly pulls it into the dev client too, so the dev boot exercises the integration.
 	compileOnly "net.fayber:fayber-config:1.0.0"
+	runtimeOnly "net.fayber:fayber-config:1.0.0"
 }
 
 processResources {
