@@ -90,7 +90,16 @@ public class BeamRenderer {
         addRing(mat, consumer, r, g, b, radius, topFadeStart, a, maxY, 0.0f);
     }
 
-    /** Emits one ring of SIDES quads (a true cylindrical band) between y0 and y1. */
+    /**
+     * Emits one ring of SIDES quads (a true cylindrical band) between y0 and y1.
+     *
+     * Vertex order matters: the beacon-beam pipelines cull back faces (verified in the 26.1
+     * RenderPipelines disassembly - no withCull(false) opt-out), so the quads must be wound
+     * with their front faces pointing OUTWARD from the cylinder axis. The previous order wound
+     * them inward, which culled the near wall from outside and left only the far wall's interior
+     * visible ("half a cylinder, I only see the inside"), and let the interior show through
+     * terrain gaps at the base.
+     */
     private static void addRing(Matrix4f mat, VertexConsumer consumer, float r, float g, float b, float radius, float y0, float a0, float y1, float a1) {
         for (int i = 0; i < SIDES; i++) {
             double theta0 = (Math.PI * 2 * i) / SIDES;
@@ -105,9 +114,9 @@ public class BeamRenderer {
             float u1 = (float) (i + 1) / SIDES;
 
             addVertex(mat, consumer, x0, y0, z0, r, g, b, a0, u0, 0);
-            addVertex(mat, consumer, x1, y0, z1, r, g, b, a0, u1, 0);
-            addVertex(mat, consumer, x1, y1, z1, r, g, b, a1, u1, 1);
             addVertex(mat, consumer, x0, y1, z0, r, g, b, a1, u0, 1);
+            addVertex(mat, consumer, x1, y1, z1, r, g, b, a1, u1, 1);
+            addVertex(mat, consumer, x1, y0, z1, r, g, b, a0, u1, 0);
         }
     }
 
