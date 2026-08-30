@@ -1,6 +1,6 @@
 package net.fayber.waypoints.gui;
 
-import net.fayber.waypoints.compat.WaypointsClothScreen;
+import net.fayber.waypoints.compat.ConfigScreenRouter;
 import net.fayber.waypoints.model.Waypoint;
 import net.fayber.waypoints.model.WaypointColor;
 import net.fayber.waypoints.model.WaypointStore;
@@ -136,7 +136,10 @@ public class WaypointScreen extends Screen {
 
         // Footer buttons: Settings & Done
         this.addRenderableWidget(Button.builder(Component.literal("Settings"), btn -> {
-            this.minecraft.setScreen(WaypointsClothScreen.create(this));
+            Screen settings = ConfigScreenRouter.create(this);
+            if (settings != null) {
+                this.minecraft.setScreen(settings);
+            }
         }).bounds(centerX - 105, this.height - 28, 100, 20).build());
 
         this.addRenderableWidget(Button.builder(Component.literal("Done"), btn -> this.onClose())

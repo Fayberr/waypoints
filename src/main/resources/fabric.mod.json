@@ -32,6 +32,7 @@
 	},
 	"suggests": {
 		"modmenu": "*",
-		"cloth-config": "*"
+		"cloth-config": "*",
+		"fayberconfig": "*"
 	}
 }
