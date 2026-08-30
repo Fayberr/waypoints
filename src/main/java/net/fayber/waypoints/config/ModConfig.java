@@ -12,6 +12,10 @@ public class ModConfig {
     public float textScale = 1.0f;
     public boolean alwaysOnTop = true;
     public boolean showOffscreenPointers = true;
+    // Distance in blocks at which the label stops shrinking with perspective: past this the
+    // label holds a constant readable on-screen size instead of collapsing to a pixel at
+    // long range. Closer than this it scales normally.
+    public float labelScaleDistance = 24.0f;
 
     // Death Waypoints
     public boolean deathWaypointEnabled = true;

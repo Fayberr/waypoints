@@ -47,6 +47,11 @@ public class PinRenderer {
     private static final float BORDER_B = 0.390f;
     private static final float BORDER_A = 0.90f;
 
+    // Alpha of the faint depth-writing card underlay (see renderPin). Must stay above the text
+    // shaders' `if (color.a < 0.1) discard;` threshold or it writes no depth at all; kept as
+    // low as possible so it is visually invisible under the real card.
+    private static final float DEPTH_UNDERLAY_ALPHA = 0.15f;
+
     public static void renderPin(PoseStack poseStack, SubmitNodeCollector collector, Camera camera, Waypoint wp, ModConfig config, double dist) {
         if (!config.floatingPinsEnabled) {
             return;
@@ -62,12 +67,17 @@ public class PinRenderer {
         // Billboard rotation towards camera, then the vanilla nametag scale recipe
         // (scale(s, -s, s), verified against NameTagFeatureRenderer$Storage in 26.1).
         //
-        // Fixed world-space size: no distance multiplier, so normal perspective shrinks the
-        // card with distance instead of it holding a constant on-screen size.
+        // Fixed world-space size, with a far clamp: past labelScaleDistance blocks the world
+        // size grows proportionally with distance, so perspective stops shrinking the card and
+        // it holds a readable on-screen size instead of collapsing to a pixel (Feather-style).
+        // The card's world offset above the anchor grows by the same factor, so its on-screen
+        // offset above the beam holds constant too. Close by, normal perspective applies.
         //
         // pinScale and textScale are folded into one factor now that there is no separate dot:
         // both config knobs still work, they just scale the whole label together.
-        float scale = Math.max(0.01f, 0.08f * config.pinScale * config.textScale);
+        float baseScale = Math.max(0.01f, 0.08f * config.pinScale * config.textScale);
+        float farHold = Math.max(1.0f, (float) dist / Math.max(1.0f, config.labelScaleDistance));
+        float scale = baseScale * farHold;
         poseStack.mulPose(camera.rotation());
         poseStack.scale(scale, -scale, scale);
 
@@ -101,19 +111,26 @@ public class PinRenderer {
         float contentTop = CARD_TOP + CARD_PADDING_V;
         float startX = -contentW / 2.0f;
 
-        // 1. Card: lighter border rounded-rect first, then the near-black fill inset by 1px on
-        // top of it, leaving a 1px border ring visible. With SEE_THROUGH (no depth test) the
+        // 1. Card. First a faint depth-writing underlay through the depth-tested text pipeline:
+        // the see-through pipeline writes no depth, so translucent world geometry rendered
+        // later (water/rivers, spider eyes, clouds) blended OVER the card and it looked
+        // transparent. The underlay (alpha just above the text shaders' 0.1 discard threshold)
+        // writes depth at the card's distance, so those translucents are correctly blocked
+        // where the card is visible, while where the card is behind a wall the underlay fails
+        // its own depth test and the see-through copy below still renders through it.
+        if (config.alwaysOnTop) {
+            collector.submitCustomGeometry(poseStack, RenderTypes.text(WHITE_TEXTURE), (pose, consumer) -> {
+                Matrix4f mat = pose.pose();
+                emitCard(mat, consumer, cardLeft, cardRight, DEPTH_UNDERLAY_ALPHA, DEPTH_UNDERLAY_ALPHA);
+            });
+        }
+
+        // Lighter border rounded-rect first, then the near-black fill inset by 1px on top of
+        // it, leaving a 1px border ring visible. With SEE_THROUGH (no depth test) the
         // later-drawn fill wins where they overlap.
         collector.submitCustomGeometry(poseStack, cardType, (pose, consumer) -> {
             Matrix4f mat = pose.pose();
-            roundedRect(mat, consumer,
-                    cardLeft - 1.0f, CARD_TOP - 1.0f, cardRight + 1.0f, CARD_BOTTOM + 1.0f,
-                    CARD_CORNER_RADIUS + 1.0f,
-                    BORDER_R, BORDER_G, BORDER_B, BORDER_A);
-            roundedRect(mat, consumer,
-                    cardLeft, CARD_TOP, cardRight, CARD_BOTTOM,
-                    CARD_CORNER_RADIUS,
-                    FILL_R, FILL_G, FILL_B, FILL_A);
+            emitCard(mat, consumer, cardLeft, cardRight, BORDER_A, FILL_A);
         });
 
         // 2. Text on the card: name in white, distance in dimmer gray, both fully opaque.
@@ -155,6 +172,22 @@ public class PinRenderer {
         }
 
         poseStack.popPose();
+    }
+
+    /**
+     * Emits the full card (lighter border rounded-rect first, then the near-black fill inset by
+     * 1px, leaving a 1px border ring visible). Shared by the depth-writing underlay and the
+     * visible card submission so both are always the same shape.
+     */
+    private static void emitCard(Matrix4f mat, VertexConsumer consumer, float cardLeft, float cardRight, float borderA, float fillA) {
+        roundedRect(mat, consumer,
+                cardLeft - 1.0f, CARD_TOP - 1.0f, cardRight + 1.0f, CARD_BOTTOM + 1.0f,
+                CARD_CORNER_RADIUS + 1.0f,
+                BORDER_R, BORDER_G, BORDER_B, borderA);
+        roundedRect(mat, consumer,
+                cardLeft, CARD_TOP, cardRight, CARD_BOTTOM,
+                CARD_CORNER_RADIUS,
+                FILL_R, FILL_G, FILL_B, fillA);
     }
 
     /**
