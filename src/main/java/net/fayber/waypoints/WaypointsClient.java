@@ -5,10 +5,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.gui.WaypointEditScreen;
 import net.fayber.waypoints.gui.WaypointScreen;
+import net.fayber.waypoints.hud.WaypointHudElement;
 import net.fayber.waypoints.model.Waypoint;
 import net.fayber.waypoints.model.WaypointColor;
 import net.fayber.waypoints.model.WaypointStore;
@@ -54,8 +56,11 @@ public class WaypointsClient implements ClientModInitializer {
             WaypointStore.get().save();
         });
 
-        // In-World 3D Rendering hook
+        // In-World 3D Rendering hook (beams + billboard pins/labels)
         LevelRenderEvents.END_MAIN.register(WaypointRenderer::render);
+
+        // 2D HUD overlay hook (screen-edge pointer arrows for off-screen waypoints)
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "waypoints_hud"), new WaypointHudElement());
 
         // Tick events for key presses and death waypoint checks
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
