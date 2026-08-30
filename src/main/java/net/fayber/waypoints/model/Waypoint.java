@@ -85,8 +85,20 @@ public class Waypoint {
         return colorArgb;
     }
 
+    public int getColor() {
+        return colorArgb;
+    }
+
     public void setColorArgb(int colorArgb) {
         this.colorArgb = colorArgb;
+    }
+
+    public void setColor(int color) {
+        this.colorArgb = color;
+    }
+
+    public int getEffectiveColor() {
+        return new WaypointColor(colorArgb, chroma).getEffectiveArgb();
     }
 
     public boolean isChroma() {
@@ -95,10 +107,6 @@ public class Waypoint {
 
     public void setChroma(boolean chroma) {
         this.chroma = chroma;
-    }
-
-    public WaypointColor getColor() {
-        return new WaypointColor(colorArgb, chroma);
     }
 
     public boolean isVisible() {
@@ -113,8 +121,16 @@ public class Waypoint {
         return showBeam;
     }
 
+    public boolean isBeaconBeam() {
+        return showBeam;
+    }
+
     public void setShowBeam(boolean showBeam) {
         this.showBeam = showBeam;
+    }
+
+    public void setBeaconBeam(boolean beaconBeam) {
+        this.showBeam = beaconBeam;
     }
 
     public boolean isShowLabel() {
@@ -134,7 +150,7 @@ public class Waypoint {
     }
 
     public WaypointIcon getIcon() {
-        return icon != null ? icon : WaypointIcon.PIN;
+        return icon;
     }
 
     public void setIcon(WaypointIcon icon) {
@@ -143,6 +159,10 @@ public class Waypoint {
 
     public long getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
     }
 
     public boolean isDeathWaypoint() {

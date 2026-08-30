@@ -2,9 +2,12 @@ package net.fayber.waypoints.config;
 
 public class ModConfig {
     public int renderDistance = 10000;
+    public boolean beaconBeamEnabled = true;
     public float beaconWidth = 0.20f;
     public float beaconAlpha = 0.65f;
     public float beaconHeight = 384.0f;
+
+    public boolean floatingPinsEnabled = true;
     public float pinScale = 1.0f;
     public float textScale = 1.0f;
     public boolean alwaysOnTop = true;

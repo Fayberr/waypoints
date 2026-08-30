@@ -8,6 +8,7 @@ import net.fayber.waypoints.model.Waypoint;
 import net.fayber.waypoints.model.WaypointStore;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class WaypointRenderer {
 
         Vec3 camPos = camera.position();
         PoseStack poseStack = context.poseStack();
+        SubmitNodeCollector collector = context.submitNodeCollector();
         String currentDim = mc.level.dimension().identifier().toString();
         ModConfig config = ConfigManager.get();
 
@@ -46,9 +48,11 @@ public class WaypointRenderer {
             poseStack.pushPose();
             poseStack.translate(dx, dy, dz);
 
-            // Scaffold hook for detailed rendering
-            // BeamRenderer.renderBeam(poseStack, context, wp, config);
-            // PinRenderer.renderPin(poseStack, context, camera, wp, config, dist);
+            // 1. Render sleek glowing vertical beacon beam
+            BeamRenderer.renderBeam(poseStack, collector, wp, config);
+
+            // 2. Render billboard pin icon & floating distance text
+            PinRenderer.renderPin(poseStack, collector, camera, wp, config, dist);
 
             poseStack.popPose();
         }
