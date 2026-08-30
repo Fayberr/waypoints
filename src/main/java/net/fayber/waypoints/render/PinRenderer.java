@@ -21,19 +21,29 @@ import org.joml.Matrix4f;
  * single line ("Name (123m)"), enclosed in a dark rounded-corner card with a subtle lighter
  * border, floating straight above the beam anchor. No separate marker dot.
  *
- * The card is drawn in THREE submit-order buckets (all from COLLECT_SUBMITS, via
- * WaypointRenderer). Vanilla submits every feature into order bucket 0; the translucent
- * feature stage executes buckets in ascending order, and within one bucket it always draws
- * text features before custom geometry features. That gives us a guaranteed GPU draw order:
+ * The card is drawn into submit-order buckets (all from COLLECT_SUBMITS, via WaypointRenderer).
+ * Vanilla submits every feature into order bucket 0; the translucent feature stage executes
+ * buckets in ascending order, and within one bucket it always draws text features before custom
+ * geometry features. Because the see-through card and text do no depth testing at all
+ * (that is what makes them render through walls), the ONLY thing that can layer one waypoint's
+ * card over another's is draw order. So the buckets are allocated PER WAYPOINT, after sorting
+ * the visible waypoints far to near (painter's algorithm), by WaypointRenderer:
  *
- *   bucket 0: beam glow (and every other mod's order-0 translucents)
- *   bucket 1: card body (fill + border, custom geometry)
- *   bucket 2: card text (submitText)
+ *   bucket 0:      beam glow + depth underlays (and every other mod's order-0 translucents)
+ *   bucket 2i+1:   card body (fill + border) of the i-th FARTHEST visible waypoint
+ *   bucket 2i+2:   that waypoint's card text (submitText)
  *
- * so the beam glow can never blend over the card, and the glyphs always draw on top of the
- * card body. (In 26.1 the glow-vs-card draw order inside a single bucket was hash-arbitrary;
- * separating the buckets removes that nondeterminism entirely. It also works on 26.2, where
- * per-bucket phase sweeps execute texts before translucent custom geometry.)
+ * which guarantees, without any depth testing:
+ *
+ *   a nearer card draws over a farther card            (2i+3 > 2i+1)
+ *   a nearer text draws over a farther text            (2i+4 > 2i+2)
+ *   a nearer CARD draws over a farther card's TEXT     (2i+3 > 2i+2)  <- the front waypoint
+ *   each text draws on top of its own card             (2i+2 > 2i+1)     fully occludes the
+ *   the beam glow never blends over any card           (0 < 2i+1)        back one
+ *
+ * (In 26.1 the glow-vs-card draw order inside a single bucket was hash-arbitrary; separating
+ * the buckets removes that nondeterminism entirely. It also works on 26.2, where per-bucket
+ * phase sweeps execute texts before translucent custom geometry.)
  *
  * The card also has a faint depth-writing underlay (renderUnderlay, bucket 0). The see-through
  * card itself writes no depth, so depth-tested translucent world passes drawn later (water,
@@ -50,9 +60,9 @@ public class PinRenderer {
     // Blank fully-opaque white texture: all card color comes from vertex colors.
     private static final Identifier WHITE_TEXTURE = Identifier.fromNamespaceAndPath("waypoints", "textures/environment/beam.png");
 
-    // Submit-order buckets for the card pieces (see class doc). Vanilla uses bucket 0.
-    public static final int ORDER_CARD_BODY = 1;
-    public static final int ORDER_CARD_TEXT = 2;
+    // Submit-order buckets are allocated per waypoint by WaypointRenderer (see class doc):
+    // the i-th farthest visible waypoint gets its card body in bucket 2i+1 and its text in
+    // bucket 2i+2. Vanilla uses bucket 0.
 
     // Card layout, in local units (the same pixel-ish units font glyphs use; the whole card is
     // scaled to world size in applyCardTransform). The card is centered on the local origin:
@@ -114,8 +124,9 @@ public class PinRenderer {
     }
 
     /**
-     * Bucket 1: submits the visible card body (border + fill) as custom geometry. Runs after
-     * every bucket-0 draw, so the beam glow never blends over the card.
+     * Submits the visible card body (border + fill) as custom geometry into the collector the
+     * caller chose for this waypoint (bucket 2i+1, see class doc). Runs after every bucket-0
+     * draw, so the beam glow never blends over the card.
      */
     public static void renderCardBody(OrderedSubmitNodeCollector collector, PoseStack poseStack, Camera camera, Waypoint wp, ModConfig config, double dist) {
         if (!config.floatingPinsEnabled) {
@@ -143,9 +154,10 @@ public class PinRenderer {
     }
 
     /**
-     * Bucket 2: submits the name/distance text. Runs after the card body in every version
-     * (bucket order on 26.2's phase sweep, buffer flush order on 26.1), so the glyphs always
-     * draw on top of the fill.
+     * Submits the name/distance text into the collector the caller chose for this waypoint
+     * (bucket 2i+2, see class doc). Runs after the card body in every version (bucket order on
+     * 26.2's phase sweep, buffer flush order on 26.1), so the glyphs always draw on top of the
+     * fill, and after every farther waypoint's card and text.
      */
     public static void renderCardText(OrderedSubmitNodeCollector collector, PoseStack poseStack, Camera camera, Waypoint wp, ModConfig config, double dist) {
         if (!config.floatingPinsEnabled) {
@@ -191,20 +203,37 @@ public class PinRenderer {
     }
 
     /**
-     * Shared card transform: scale (with the far-distance clamp), then a straight-up WORLD-space
-     * lift of the card center, then the billboard rotation and the vanilla nametag scale recipe
-     * (scale(s, -s, s), verified against NameTagFeatureRenderer$Storage in 26.1).
+     * Shared card transform: scale (with the on-screen min/max clamps), then a straight-up
+     * WORLD-space lift of the card center, then the billboard rotation and the vanilla nametag
+     * scale recipe (scale(s, -s, s), verified against NameTagFeatureRenderer$Storage in 26.1).
      *
-     * Far clamp: past labelScaleDistance blocks the world size grows proportionally with
-     * distance, so perspective stops shrinking the card and it holds a readable on-screen size
-     * instead of collapsing to a pixel (Feather-style). The lift grows by the same factor, so
-     * the card's on-screen offset above the beam holds constant too. Close by, normal
-     * perspective applies. pinScale and textScale scale the whole card as one factor.
+     * <p>The natural on-screen scale factor is pure perspective (base/dist). Two clamps bound it
+     * on both ends, both expressed as multipliers of the "held" size the card settles at past
+     * labelScaleDistance (base/labelScaleDistance), so minScale=1.0 reproduces the old far hold
+     * exactly:
+     *
+     * <ul>
+     *   <li><b>Max (close):</b> perspective would blow the card up right next to it; capping the
+     *       on-screen factor at held*labelMaxScale keeps it at a fixed on-screen size closer than
+     *       labelScaleDistance/labelMaxScale blocks.
+     *   <li><b>Min (far):</b> flooring the on-screen factor at held*labelMinScale lets the card
+     *       keep shrinking past the hold down to that floor (minScale &lt; 1) or hold a bigger
+     *       readable size (minScale &gt; 1).
+     * </ul>
+     *
+     * <p>The lift grows with the scale, so the card's on-screen offset above the beam stays
+     * constant inside a clamped zone too. pinScale and textScale scale the whole card as one
+     * factor.
      */
     private static void applyCardTransform(PoseStack poseStack, Camera camera, ModConfig config, double dist) {
         float baseScale = Math.max(0.01f, 0.08f * config.pinScale * config.textScale);
-        float farHold = Math.max(1.0f, (float) dist / Math.max(1.0f, config.labelScaleDistance));
-        float scale = baseScale * farHold;
+        float holdDist = Math.max(1.0f, config.labelScaleDistance);
+        float held = baseScale / holdDist;
+        float d = Math.max((float) dist, 1e-3f);
+        float lo = held * config.labelMinScale;
+        float hi = config.labelMaxScale > 0.0f ? held * config.labelMaxScale : Float.MAX_VALUE;
+        float screen = Math.clamp(baseScale / d, Math.min(lo, hi), Math.max(lo, hi));
+        float scale = screen * d;
         poseStack.translate(0, CARD_LIFT * scale, 0);
         poseStack.mulPose(camera.rotation());
         poseStack.scale(scale, -scale, scale);

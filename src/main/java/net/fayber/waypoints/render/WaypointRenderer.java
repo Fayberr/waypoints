@@ -15,25 +15,41 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Hooked from the Fabric COLLECT_SUBMITS event (registered in WaypointsClient). Submits the
- * beam geometry and the three card pieces into separate submit-order buckets:
+ * beam geometry and the three card pieces into submit-order buckets:
  *
- * - bucket 0 (default collector): beam + glow + the card's depth-writing underlay
- * - bucket 1 (PinRenderer.ORDER_CARD_BODY): the visible card fill/border
- * - bucket 2 (PinRenderer.ORDER_CARD_TEXT): the card's name/distance text
+ * - bucket 0 (default collector): beam + glow + every card's depth-writing underlay
+ * - bucket 2i+1: the visible card fill/border of the i-th FARTHEST visible waypoint
+ * - bucket 2i+2: that waypoint's name/distance text
  *
  * The translucent feature stage draws buckets in ascending order, so the beam glow can never
- * blend over the card and the glyphs always draw on top of the fill (see PinRenderer's class
- * doc for the version-specific mechanics).
+ * blend over a card and the glyphs always draw on top of their own fill. The per-waypoint
+ * allocation is the occlusion mechanism: the see-through card and text do no depth testing
+ * (that is what makes them render through walls), so the only way a nearer waypoint can fully
+ * cover a farther one, TEXT INCLUDED, is painter's order. Waypoints are therefore sorted far
+ * to near and each gets its own bucket pair; see PinRenderer's class doc for the exact
+ * ordering guarantees and the version-specific mechanics.
  */
 public class WaypointRenderer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WaypointRenderer.class);
 
+    /**
+     * How many waypoints get their own card bucket pair (2 per waypoint, buckets up to 2N+1).
+     * Beyond this many visible waypoints the tail shares the last pair and merely keeps the
+     * old submission-order layering among themselves; real worlds stay far below this.
+     */
+    private static final int MAX_CARD_SLOTS = 32;
+
     private static boolean warnedNoBuckets = false;
+
+    /** One waypoint that passed the cull, with its camera distance. */
+    private record Renderable(Waypoint wp, double dist) {
+    }
 
     public static void render(LevelRenderContext context) {
         Minecraft mc = Minecraft.getInstance();
@@ -57,20 +73,27 @@ public class WaypointRenderer {
         // SubmitNodeStorage here, so cast to it; if a future version breaks that assumption,
         // degrade gracefully to bucket-0-only rendering (underlay + text, no card body).
         SubmitNodeStorage storage = collector instanceof SubmitNodeStorage s ? s : null;
-        OrderedSubmitNodeCollector bodyCollector = storage != null ? storage.order(PinRenderer.ORDER_CARD_BODY) : null;
-        OrderedSubmitNodeCollector textCollector = storage != null ? storage.order(PinRenderer.ORDER_CARD_TEXT) : collector;
         if (storage == null && !warnedNoBuckets) {
             warnedNoBuckets = true;
             LOGGER.warn("SubmitNodeStorage not available; waypoint label cards render without their card body");
         }
 
-        List<Waypoint> visibleWaypoints = WaypointStore.get().getVisibleForDimension(currentDim);
-
-        for (Waypoint wp : visibleWaypoints) {
+        // Cull first, then sort far to near: with the see-through (depth-test-free) card and
+        // text, submission order is the only layering, and painter's algorithm needs the far
+        // ones submitted (drawn) first so the near ones draw over them.
+        List<Renderable> renderables = new ArrayList<>();
+        for (Waypoint wp : WaypointStore.get().getVisibleForDimension(currentDim)) {
             double dist = cullAndDistance(wp, camPos, config);
-            if (dist < 0.0) {
-                continue;
+            if (dist >= 0.0) {
+                renderables.add(new Renderable(wp, dist));
             }
+        }
+        renderables.sort((a, b) -> Double.compare(b.dist(), a.dist()));
+
+        int slot = 0;
+        for (Renderable renderable : renderables) {
+            Waypoint wp = renderable.wp();
+            double dist = renderable.dist();
 
             double dx = Math.floor(wp.getX()) + 0.5 - camPos.x;
             double dy = Math.floor(wp.getY()) + 0.5 - camPos.y;
@@ -83,18 +106,24 @@ public class WaypointRenderer {
             BeamRenderer.renderBeam(poseStack, collector, wp, config);
 
             // 2. Faint depth-writing card underlay (bucket 0, invisible; only writes depth).
+            //    Underlay-vs-underlay needs no sorting: they depth-test against each other and
+            //    the nearer card's plane wins the depth buffer either way.
             PinRenderer.renderUnderlay(poseStack, collector, camera, wp, config, dist);
 
-            // 3. Visible card body (bucket 1) - after every bucket-0 draw, so the glow never
-            //    blends over the card.
-            if (bodyCollector != null) {
+            // 3+4. Card body and text, each waypoint in its own bucket pair (2i+1 / 2i+2) so a
+            //     nearer waypoint's card and text draw over a farther waypoint's card AND text.
+            if (storage != null) {
+                int cappedSlot = Math.min(slot, MAX_CARD_SLOTS - 1);
+                OrderedSubmitNodeCollector bodyCollector = storage.order(2 * cappedSlot + 1);
+                OrderedSubmitNodeCollector textCollector = storage.order(2 * cappedSlot + 2);
                 PinRenderer.renderCardBody(bodyCollector, poseStack, camera, wp, config, dist);
+                PinRenderer.renderCardText(textCollector, poseStack, camera, wp, config, dist);
+            } else {
+                PinRenderer.renderCardText(collector, poseStack, camera, wp, config, dist);
             }
 
-            // 4. Card text (bucket 2) - after the card body.
-            PinRenderer.renderCardText(textCollector, poseStack, camera, wp, config, dist);
-
             poseStack.popPose();
+            slot++;
         }
     }
 
