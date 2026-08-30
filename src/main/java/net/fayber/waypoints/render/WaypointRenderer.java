@@ -35,9 +35,16 @@ public class WaypointRenderer {
         List<Waypoint> visibleWaypoints = WaypointStore.get().getVisibleForDimension(currentDim);
 
         for (Waypoint wp : visibleWaypoints) {
-            double dx = wp.getX() - camPos.x;
-            double dy = wp.getY() - camPos.y;
-            double dz = wp.getZ() - camPos.z;
+            // Snap to the centre of the containing block so the beam/pin are visually centered on
+            // the block, even if the stored coordinate is fractional (e.g. created at the player's
+            // exact eye position). Idempotent for already-normalized waypoints.
+            double bx = Math.floor(wp.getX()) + 0.5;
+            double by = Math.floor(wp.getY()) + 0.5;
+            double bz = Math.floor(wp.getZ()) + 0.5;
+
+            double dx = bx - camPos.x;
+            double dy = by - camPos.y;
+            double dz = bz - camPos.z;
             double distSq = dx * dx + dy * dy + dz * dz;
             double dist = Math.sqrt(distSq);
 
