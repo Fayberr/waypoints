@@ -59,8 +59,19 @@ public class WaypointsClient implements ClientModInitializer {
             WaypointStore.get().save();
         });
 
-        // In-World 3D Rendering hook (beams + billboard pins/labels)
-        LevelRenderEvents.END_MAIN.register(WaypointRenderer::render);
+        // In-World 3D Rendering hook (beams + billboard pins/labels).
+        //
+        // MUST be COLLECT_SUBMITS, not END_MAIN. COLLECT_SUBMITS fires at the return of
+        // LevelRenderer#submitFeatures, i.e. while the submit-node collector is still being
+        // filled and before it is drained. END_MAIN fires at the end of the main pass, after
+        // both the solid and translucent feature batches have already been executed, so
+        // geometry submitted there misses this frame's draw and gets flushed outside the
+        // RenderSystem#getModelViewStack push that LevelRenderer#renderLevel makes to apply
+        // the camera view-rotation matrix. The net effect is geometry that keeps its
+        // translation but loses all camera rotation: the beam stays a dead-vertical line
+        // welded to the viewport (and even draws when the waypoint is behind you) instead of
+        // being real, perspective-correct, depth-tested world geometry.
+        LevelRenderEvents.COLLECT_SUBMITS.register(WaypointRenderer::render);
 
         // 2D HUD overlay hook (screen-edge pointer arrows for off-screen waypoints)
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "waypoints_hud"), new WaypointHudElement());
