@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "net.fayber.waypoints.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"DeathScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "waypoints",
+	"version": "${version}",
+	"name": "Modern Waypoints",
+	"description": "Clean, modern client-side waypoints with floating pins, sleek vertical beacon beams, dynamic distance, multi-world isolation, and death waypoints.",
+	"authors": [
+		"Fayber"
+	],
+	"contact": {
+		"homepage": "https://github.com/Fayberr/Waypoints-Minecraft-Mod",
+		"sources": "https://github.com/Fayberr/Waypoints-Minecraft-Mod"
+	},
+	"license": "GPL-3.0-or-later",
+	"icon": "assets/waypoints/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"net.fayber.waypoints.WaypointsClient"
+		],
+		"modmenu": [
+			"net.fayber.waypoints.compat.WaypointsModMenu"
+		]
+	},
+	"mixins": [
+		"waypoints.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": ">=26.1 <26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*",
+		"cloth-config": "*"
+	}
+}
