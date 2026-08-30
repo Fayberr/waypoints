@@ -61,6 +61,20 @@ public final class WaypointsClothScreen {
                 .setSaveConsumer(val -> config.pinScale = val)
                 .build());
 
+        visuals.addEntry(eb.startFloatField(Component.literal("Max Size (Close)"), config.labelMaxScale)
+                .setDefaultValue(4.0f)
+                .setMin(1.0f).setMax(16.0f)
+                .setTooltip(Component.literal("Largest on-screen label size when very close, as a multiple of the size the card holds far away."))
+                .setSaveConsumer(val -> config.labelMaxScale = val)
+                .build());
+
+        visuals.addEntry(eb.startFloatField(Component.literal("Min Size (Far)"), config.labelMinScale)
+                .setDefaultValue(1.0f)
+                .setMin(0.25f).setMax(3.0f)
+                .setTooltip(Component.literal("Smallest on-screen label size when very far, as a multiple of the held size (1.0 = hold that size)."))
+                .setSaveConsumer(val -> config.labelMinScale = val)
+                .build());
+
         ConfigCategory deaths = builder.getOrCreateCategory(Component.literal("Death Waypoints"));
         deaths.addEntry(eb.startBooleanToggle(Component.literal("Enable Death Waypoints"), config.deathWaypointEnabled)
                 .setDefaultValue(true)

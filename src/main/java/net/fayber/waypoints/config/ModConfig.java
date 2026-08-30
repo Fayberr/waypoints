@@ -16,6 +16,13 @@ public class ModConfig {
     // label holds a constant readable on-screen size instead of collapsing to a pixel at
     // long range. Closer than this it scales normally.
     public float labelScaleDistance = 24.0f;
+    // On-screen size clamps for the label card, as multipliers of the size the card holds past
+    // labelScaleDistance. labelMaxScale caps how big the card gets when very close (perspective
+    // otherwise blows it up right next to it); labelMinScale floors how small it gets when very
+    // far. Defaults 4.0 / 1.0: the far behavior stays identical to the plain hold, the close
+    // blowup is capped at 4x the held size. labelMaxScale <= 0 means uncapped.
+    public float labelMinScale = 1.0f;
+    public float labelMaxScale = 4.0f;
 
     // Death Waypoints
     public boolean deathWaypointEnabled = true;

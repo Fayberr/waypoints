@@ -49,6 +49,10 @@ public final class WaypointsFayberScreen {
                 .tooltip("Scale factor for the label card text.")
                 .floatSlider("Label Hold Distance", () -> c.labelScaleDistance, v -> c.labelScaleDistance = v, 4.0f, 128.0f, 1.0f)
                 .tooltip("Past this distance labels stop shrinking and hold a readable size.")
+                .floatSlider("Max Size (Close)", () -> c.labelMaxScale, v -> c.labelMaxScale = v, 1.0f, 16.0f, 0.25f)
+                .tooltip("Largest on-screen label size when very close, as a multiple of the size the card holds far away. Caps the perspective blow-up right next to a waypoint.")
+                .floatSlider("Min Size (Far)", () -> c.labelMinScale, v -> c.labelMinScale = v, 0.25f, 3.0f, 0.05f)
+                .tooltip("Smallest on-screen label size when very far, as a multiple of the held size. 1.0 holds that size, smaller keeps shrinking to this floor.")
 
                 .category("Death Waypoints")
                 .bool("Enable Death Waypoints", () -> c.deathWaypointEnabled, v -> c.deathWaypointEnabled = v)
