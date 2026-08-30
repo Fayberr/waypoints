@@ -39,6 +39,12 @@ public final class WaypointsClothScreen {
                 .setSaveConsumer(val -> config.showOffscreenPointers = val)
                 .build());
 
+        general.addEntry(eb.startBooleanToggle(Component.literal("Xaero World Map Markers"), config.xaeroWorldMapEnabled)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Draw your waypoints on Xaero's World Map. Only has an effect when that mod is installed."))
+                .setSaveConsumer(val -> config.xaeroWorldMapEnabled = val)
+                .build());
+
         ConfigCategory visuals = builder.getOrCreateCategory(Component.literal("Visuals"));
         visuals.addEntry(eb.startFloatField(Component.literal("Beacon Beam Width"), config.beaconWidth)
                 .setDefaultValue(0.20f)

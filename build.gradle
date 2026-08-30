@@ -17,6 +17,12 @@ repositories {
 	maven { name = 'Shedaniel'; url = 'https://maven.shedaniel.me/' }
 	// Fayber Config is published to the local maven repo by its own `publishToMavenLocal`.
 	mavenLocal()
+	// Xaero's maven, for the World Map integration (compileOnly, never shipped: All Rights Reserved).
+	maven {
+		name = 'Xaero'
+		url = 'https://chocolateminecraft.com/maven'
+		content { includeGroupByRegex 'xaero.*' }
+	}
 }
 
 dependencies {
@@ -34,6 +40,11 @@ dependencies {
 	// runtimeOnly pulls it into the dev client too, so the dev boot exercises the integration.
 	compileOnly "net.fayber:fayber-config:1.0.0"
 	runtimeOnly "net.fayber:fayber-config:1.0.0"
+
+	// Xaero's World Map (optional, compileOnly): our waypoints are registered as map elements
+	// through its public element framework. Never a runtime dependency, never shipped
+	// (All Rights Reserved). Pulls xaerolib transitively for the Tooltip type in ElementReader.
+	compileOnly "xaero.map:xaeroworldmap-fabric-${project.minecraft_version}:1.45.0"
 }
 
 processResources {

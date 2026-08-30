@@ -33,6 +33,7 @@
 	"suggests": {
 		"modmenu": "*",
 		"cloth-config": "*",
-		"fayberconfig": "*"
+		"fayberconfig": "*",
+		"xaeroworldmap": "*"
 	}
 }

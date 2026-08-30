@@ -2,11 +2,13 @@ package net.fayber.waypoints;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fayber.waypoints.compat.xaero.XaeroWorldMapCompat;
 import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.config.ModConfig;
 import net.fayber.waypoints.gui.WaypointEditScreen;
@@ -20,11 +22,14 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class WaypointsClient implements ClientModInitializer {
     public static final String MOD_ID = "waypoints";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static KeyMapping openMenuKey;
     public static KeyMapping quickAddKey;
@@ -74,6 +79,18 @@ public class WaypointsClient implements ClientModInitializer {
         // welded to the viewport (and even draws when the waypoint is behind you) instead of
         // being real, perspective-correct, depth-tested world geometry.
         LevelRenderEvents.COLLECT_SUBMITS.register(WaypointRenderer::render);
+
+        // Xaero's World Map integration: adds our waypoints to the full-screen map as map
+        // elements. The compat class is only touched inside this branch so its Xaero imports stay
+        // unloaded when the World Map is not installed (it is a compileOnly dependency), and the
+        // catch keeps a future Xaero change from taking the whole mod down with it.
+        if (FabricLoader.getInstance().isModLoaded("xaeroworldmap")) {
+            try {
+                XaeroWorldMapCompat.register();
+            } catch (Throwable t) {
+                LOGGER.warn("Xaero's World Map integration could not be set up", t);
+            }
+        }
 
         // 2D HUD overlay hook (screen-edge pointer arrows for off-screen waypoints)
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "waypoints_hud"), new WaypointHudElement());

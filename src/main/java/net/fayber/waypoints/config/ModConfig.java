@@ -24,6 +24,10 @@ public class ModConfig {
     public float labelMinScale = 1.0f;
     public float labelMaxScale = 4.0f;
 
+    // Integrations
+    // Draw waypoints on Xaero's World Map (only has an effect when that mod is installed).
+    public boolean xaeroWorldMapEnabled = true;
+
     // Death Waypoints
     public boolean deathWaypointEnabled = true;
     public boolean deathWaypointAutoRemove = true;
