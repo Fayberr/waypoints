@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fayber.waypoints.config.ModConfig;
 import net.fayber.waypoints.model.Waypoint;
-import net.fayber.waypoints.model.WaypointColor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -15,147 +14,205 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 
+/**
+ * Renders the waypoint label as a Feather-style card: the waypoint name and the distance on a
+ * single line ("Name (123m)"), enclosed in a dark rounded-corner card with a subtle lighter
+ * border, floating above the beam anchor. No separate marker dot.
+ *
+ * The card is pure vertex-colored geometry (blank white texture + vertex colors), so no extra
+ * assets are needed. Corner rounding is built from quarter-circle fans, so it is a true rounded
+ * rectangle at any size.
+ */
 public class PinRenderer {
-    // Blank fully-opaque white texture: all marker color comes from vertex colors, so the
-    // marker always matches the waypoint color exactly. (The previous texture was vanilla's
-    // red map "target point" decoration sprite, which painted the marker red no matter what
-    // color the vertex data asked for.)
+    // Blank fully-opaque white texture: all card color comes from vertex colors.
     private static final Identifier WHITE_TEXTURE = Identifier.fromNamespaceAndPath("waypoints", "textures/environment/beam.png");
 
-    // Marker geometry, in local units at the pin's world scale (0.08 world units per unit).
-    private static final float DOT_RADIUS = 1.3f;
-    private static final float DOT_RIM = 1.8f;
-    private static final int DISC_SEGMENTS = 12;
+    // Card layout, in local units (the same pixel-ish units font glyphs use; the whole pin is
+    // scaled to world size below). Card floats above the anchor: y=-22 (top) to y=-7 (bottom).
+    private static final float CARD_TOP = -22.0f;
+    private static final float CARD_BOTTOM = -7.0f;
+    private static final float CARD_PADDING_H = 4.0f;
+    private static final float CARD_PADDING_V = 3.0f;
+    private static final float CARD_CORNER_RADIUS = 2.5f;
+    private static final int CORNER_SEGMENTS = 5;
+    private static final float NAME_DIST_GAP = 4.0f;
+
+    // Card colors: near-black fill with a subtle lighter border (Feather-like).
+    private static final float FILL_R = 0.070f;
+    private static final float FILL_G = 0.078f;
+    private static final float FILL_B = 0.090f;
+    private static final float FILL_A = 0.88f;
+    private static final float BORDER_R = 0.320f;
+    private static final float BORDER_G = 0.350f;
+    private static final float BORDER_B = 0.390f;
+    private static final float BORDER_A = 0.90f;
 
     public static void renderPin(PoseStack poseStack, SubmitNodeCollector collector, Camera camera, Waypoint wp, ModConfig config, double dist) {
         if (!config.floatingPinsEnabled) {
             return;
         }
+        boolean showLabel = wp.isShowLabel();
+        boolean showDistance = wp.isShowDistance();
+        if (!showLabel && !showDistance) {
+            return;
+        }
 
         poseStack.pushPose();
 
-        // Billboard rotation towards camera
+        // Billboard rotation towards camera, then the vanilla nametag scale recipe
+        // (scale(s, -s, s), verified against NameTagFeatureRenderer$Storage in 26.1).
+        //
+        // Fixed world-space size: no distance multiplier, so normal perspective shrinks the
+        // card with distance instead of it holding a constant on-screen size.
+        //
+        // pinScale and textScale are folded into one factor now that there is no separate dot:
+        // both config knobs still work, they just scale the whole label together.
+        float scale = Math.max(0.01f, 0.08f * config.pinScale * config.textScale);
         poseStack.mulPose(camera.rotation());
-
-        // Fixed world-space scale (no distance multiplier). This is the actual root cause of the
-        // "not really 3D, feels stuck to my screen" complaint: the previous "distance-compensated"
-        // scale grew the pin's world size in direct proportion to distance, which cancels out
-        // perspective foreshortening (screen size = world size / distance) and makes the pin hold
-        // a near-constant apparent size on screen regardless of how far away it really is - i.e.
-        // it behaves like a flat HUD compass marker glued to the viewport instead of a real object
-        // sitting out in the world. A fixed world-space size lets normal perspective projection
-        // shrink it naturally with distance, exactly like vanilla entity nametags.
-        float scale = Math.max(0.01f, 0.08f * config.pinScale);
         poseStack.scale(scale, -scale, scale);
 
-        WaypointColor color = WaypointColor.of(wp.getEffectiveColor());
-        float r = color.getRed();
-        float g = color.getGreen();
-        float b = color.getBlue();
+        Font font = Minecraft.getInstance().font;
+        Font.DisplayMode mode = config.alwaysOnTop
+                ? Font.DisplayMode.SEE_THROUGH
+                : Font.DisplayMode.NORMAL;
 
-        // 1. Marker dot: dark backing disc for contrast plus a colored core, at the anchor point.
-        // textSeeThrough has no depth state (no test, no write), so the marker stays visible
-        // through walls like modern client mods' markers; config.alwaysOnTop=false opts out into
-        // the depth-tested variant.
-        RenderType dotType = config.alwaysOnTop
+        // Through-wall variant has no depth state (no test, no write); the depth-tested variant
+        // is the opt-out via config.alwaysOnTop=false.
+        RenderType cardType = config.alwaysOnTop
                 ? RenderTypes.textSeeThrough(WHITE_TEXTURE)
                 : RenderTypes.text(WHITE_TEXTURE);
-        collector.submitCustomGeometry(poseStack, dotType, (pose, consumer) -> {
+
+        String nameText = wp.getName();
+        String distText = "(" + formatDistance(dist) + ")";
+        float nameWidth = font.width(nameText);
+        float distWidth = font.width(distText);
+
+        float contentW = 0.0f;
+        if (showLabel && showDistance) {
+            contentW = nameWidth + NAME_DIST_GAP + distWidth;
+        } else if (showLabel) {
+            contentW = nameWidth;
+        } else {
+            contentW = distWidth;
+        }
+
+        float cardLeft = -contentW / 2.0f - CARD_PADDING_H;
+        float cardRight = contentW / 2.0f + CARD_PADDING_H;
+        float contentTop = CARD_TOP + CARD_PADDING_V;
+        float startX = -contentW / 2.0f;
+
+        // 1. Card: lighter border rounded-rect first, then the near-black fill inset by 1px on
+        // top of it, leaving a 1px border ring visible. With SEE_THROUGH (no depth test) the
+        // later-drawn fill wins where they overlap.
+        collector.submitCustomGeometry(poseStack, cardType, (pose, consumer) -> {
             Matrix4f mat = pose.pose();
-            renderMarkerDot(mat, consumer, r, g, b);
+            roundedRect(mat, consumer,
+                    cardLeft - 1.0f, CARD_TOP - 1.0f, cardRight + 1.0f, CARD_BOTTOM + 1.0f,
+                    CARD_CORNER_RADIUS + 1.0f,
+                    BORDER_R, BORDER_G, BORDER_B, BORDER_A);
+            roundedRect(mat, consumer,
+                    cardLeft, CARD_TOP, cardRight, CARD_BOTTOM,
+                    CARD_CORNER_RADIUS,
+                    FILL_R, FILL_G, FILL_B, FILL_A);
         });
 
-        // 2. Floating name & distance above the dot. White/gray text with a soft shadow and no
-        // background box reads modern; the waypoint color is carried by the beam and dot.
-        if (wp.isShowLabel() || wp.isShowDistance()) {
-            Font font = Minecraft.getInstance().font;
-            Font.DisplayMode mode = config.alwaysOnTop
-                    ? Font.DisplayMode.SEE_THROUGH
-                    : Font.DisplayMode.NORMAL;
-
-            poseStack.pushPose();
-            poseStack.scale(config.textScale, config.textScale, config.textScale);
-
-            if (wp.isShowLabel()) {
-                String nameText = wp.getName();
-                FormattedCharSequence nameSeq = FormattedCharSequence.forward(nameText, net.minecraft.network.chat.Style.EMPTY);
-                float nameWidth = font.width(nameText);
-                // 26.x submitText int order is (lightCoords, color, background, outline) - light
-                // comes BEFORE color (verified against SubmitNodeStorage$TextSubmit's record
-                // fields). The 1.21-era order (color, background, light, overlay) silently fed
-                // 0xFFFFFFFF into lightCoords and 0x00000000 into color: fully transparent text.
-                collector.submitText(
-                        poseStack,
-                        -nameWidth / 2.0f,
-                        -16.0f,
-                        nameSeq,
-                        true,
-                        mode,
-                        0x00F000F0,
-                        0xFFFFFFFF,
-                        0x00000000,
-                        0
-                );
-            }
-
-            if (wp.isShowDistance()) {
-                String distText = formatDistance(dist);
-                FormattedCharSequence distSeq = FormattedCharSequence.forward(distText, net.minecraft.network.chat.Style.EMPTY);
-                float distWidth = font.width(distText);
-                collector.submitText(
-                        poseStack,
-                        -distWidth / 2.0f,
-                        -5.0f,
-                        distSeq,
-                        true,
-                        mode,
-                        0x00F000F0,
-                        0xFFB8C4CC,
-                        0x00000000,
-                        0
-                );
-            }
-
-            poseStack.popPose();
+        // 2. Text on the card: name in white, distance in dimmer gray, both fully opaque.
+        // 26.x submitText int order is (lightCoords, color, background, outline) - light comes
+        // BEFORE color (verified against SubmitNodeStorage$TextSubmit's record fields). The
+        // 1.21-era order silently fed the background into color: fully transparent text.
+        // dropShadow=false: the card provides the contrast, and a shadow ghost reads blurry.
+        float textY = contentTop;
+        if (showLabel) {
+            FormattedCharSequence nameSeq = FormattedCharSequence.forward(nameText, net.minecraft.network.chat.Style.EMPTY);
+            collector.submitText(
+                    poseStack,
+                    startX,
+                    textY,
+                    nameSeq,
+                    false,
+                    mode,
+                    0x00F000F0,
+                    0xFFFFFFFF,
+                    0x00000000,
+                    0
+            );
+        }
+        if (showDistance) {
+            float distX = showLabel ? startX + nameWidth + NAME_DIST_GAP : startX;
+            FormattedCharSequence distSeq = FormattedCharSequence.forward(distText, net.minecraft.network.chat.Style.EMPTY);
+            collector.submitText(
+                    poseStack,
+                    distX,
+                    textY,
+                    distSeq,
+                    false,
+                    mode,
+                    0x00F000F0,
+                    0xFFA8B0BA,
+                    0x00000000,
+                    0
+            );
         }
 
         poseStack.popPose();
     }
 
-    /** Draws the marker dot: a dark backing disc under a smaller colored disc, both facing the camera. */
-    private static void renderMarkerDot(Matrix4f mat, VertexConsumer consumer, float r, float g, float b) {
-        // Dark rim disc first (slightly larger, under the core via draw order), then the colored core.
-        filledDisc(mat, consumer, DOT_RIM, 0.0f, 0.0f, 0.0f, 0.70f);
-        filledDisc(mat, consumer, DOT_RADIUS, r, g, b, 1.0f);
+    /**
+     * Emits a rounded rectangle (center band + top/bottom bands + four quarter-circle corner
+     * fans) in the billboard plane. All winding faces the camera, matching the vanilla glyph
+     * convention: through the scale(s, -s, s) billboard mirror, quads must be emitted
+     * (left,top) -> (left,bottom) -> (right,bottom) -> (right,top) and fans
+     * (center, next, current) with the angle increasing, or the text pipelines' backface
+     * culling discards them.
+     */
+    private static void roundedRect(Matrix4f mat, VertexConsumer consumer, float x0, float y0, float x1, float y1, float radius, float r, float g, float b, float a) {
+        float rClamped = Math.min(radius, Math.min(x1 - x0, y1 - y0) / 2.0f);
+
+        // Middle band (full width, inset vertically)
+        addQuad(mat, consumer, x0, y0 + rClamped, x1, y1 - rClamped, r, g, b, a);
+        // Top band (inset horizontally)
+        addQuad(mat, consumer, x0 + rClamped, y0, x1 - rClamped, y0 + rClamped, r, g, b, a);
+        // Bottom band (inset horizontally)
+        addQuad(mat, consumer, x0 + rClamped, y1 - rClamped, x1 - rClamped, y1, r, g, b, a);
+
+        // Corner quarter-fans. Each spans PI/2 of arc; (cx, cy, thetaStart) chosen so the arc
+        // bulges outward at the corner. Angles increase (the fan winding depends on it).
+        cornerFan(mat, consumer, x0 + rClamped, y0 + rClamped, (float) Math.PI, r, g, b, a, rClamped);
+        cornerFan(mat, consumer, x1 - rClamped, y0 + rClamped, (float) (Math.PI * 1.5), r, g, b, a, rClamped);
+        cornerFan(mat, consumer, x1 - rClamped, y1 - rClamped, 0.0f, r, g, b, a, rClamped);
+        cornerFan(mat, consumer, x0 + rClamped, y1 - rClamped, (float) (Math.PI * 0.5), r, g, b, a, rClamped);
     }
 
-    /**
-     * Emits a filled N-gon disc centered on the origin in the billboard plane (degenerate quads).
-     *
-     * Vertex order is deliberately reversed (clockwise when viewed from +Z) so the disc's front
-     * face is -Z before the billboard mirror. Vanilla glyph quads face -Z here too, and the
-     * scale(s, -s, s) flip (the same recipe vanilla nametags use, verified in the 26.1
-     * NameTagFeatureRenderer$Storage disassembly) then turns them to face the camera. Wound the
-     * other way, the text pipelines - which cull back faces - discard the entire disc.
-     */
-    private static void filledDisc(Matrix4f mat, VertexConsumer consumer, float radius, float r, float g, float b, float a) {
-        for (int i = 0; i < DISC_SEGMENTS; i++) {
-            double a0 = (Math.PI * 2 * i) / DISC_SEGMENTS;
-            double a1 = (Math.PI * 2 * (i + 1)) / DISC_SEGMENTS;
-            float x0 = (float) Math.cos(a0) * radius;
-            float y0 = (float) Math.sin(a0) * radius;
-            float x1 = (float) Math.cos(a1) * radius;
-            float y1 = (float) Math.sin(a1) * radius;
-
-            addVertex(mat, consumer, 0, 0, 0, r, g, b, a);
-            addVertex(mat, consumer, x1, y1, 0, r, g, b, a);
-            addVertex(mat, consumer, x0, y0, 0, r, g, b, a);
-            addVertex(mat, consumer, x0, y0, 0, r, g, b, a);
+    /** One quarter-circle fan centered at (cx, cy), starting at thetaStart and sweeping +PI/2. */
+    private static void cornerFan(Matrix4f mat, VertexConsumer consumer, float cx, float cy, float thetaStart, float r, float g, float b, float a, float radius) {
+        float prevX = cx + (float) Math.cos(thetaStart) * radius;
+        float prevY = cy + (float) Math.sin(thetaStart) * radius;
+        for (int i = 1; i <= CORNER_SEGMENTS; i++) {
+            float theta = thetaStart + (float) (Math.PI / 2) * i / CORNER_SEGMENTS;
+            float px = cx + (float) Math.cos(theta) * radius;
+            float py = cy + (float) Math.sin(theta) * radius;
+            addVertex(mat, consumer, cx, cy, r, g, b, a);
+            addVertex(mat, consumer, px, py, r, g, b, a);
+            addVertex(mat, consumer, prevX, prevY, r, g, b, a);
+            addVertex(mat, consumer, prevX, prevY, r, g, b, a);
+            prevX = px;
+            prevY = py;
         }
     }
 
-    private static void addVertex(Matrix4f mat, VertexConsumer consumer, float x, float y, float z, float r, float g, float b, float a) {
-        consumer.addVertex(mat, x, y, z)
+    /**
+     * Emits one axis-aligned quad (degenerate quad pair) in the billboard plane, wound to face
+     * the camera through the billboard mirror: (x0,y0) -> (x0,y1) -> (x1,y1) -> (x1,y0).
+     */
+    private static void addQuad(Matrix4f mat, VertexConsumer consumer, float x0, float y0, float x1, float y1, float r, float g, float b, float a) {
+        addVertex(mat, consumer, x0, y0, r, g, b, a);
+        addVertex(mat, consumer, x0, y1, r, g, b, a);
+        addVertex(mat, consumer, x1, y1, r, g, b, a);
+        addVertex(mat, consumer, x1, y0, r, g, b, a);
+    }
+
+    private static void addVertex(Matrix4f mat, VertexConsumer consumer, float x, float y, float r, float g, float b, float a) {
+        consumer.addVertex(mat, x, y, 0)
                 .setColor(r, g, b, a)
                 .setUv(0.5f, 0.5f)
                 .setOverlay(0)
