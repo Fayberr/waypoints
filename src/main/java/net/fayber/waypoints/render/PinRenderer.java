@@ -80,6 +80,10 @@ public class PinRenderer {
                 String nameText = wp.getName();
                 FormattedCharSequence nameSeq = FormattedCharSequence.forward(nameText, net.minecraft.network.chat.Style.EMPTY);
                 float nameWidth = font.width(nameText);
+                // 26.x submitText int order is (lightCoords, color, background, outline) - light
+                // comes BEFORE color (verified against SubmitNodeStorage$TextSubmit's record
+                // fields). The 1.21-era order (color, background, light, overlay) silently fed
+                // 0xFFFFFFFF into lightCoords and 0x00000000 into color: fully transparent text.
                 collector.submitText(
                         poseStack,
                         -nameWidth / 2.0f,
@@ -87,9 +91,9 @@ public class PinRenderer {
                         nameSeq,
                         true,
                         mode,
+                        0x00F000F0,
                         0xFFFFFFFF,
                         0x00000000,
-                        0x00F000F0,
                         0
                 );
             }
@@ -105,9 +109,9 @@ public class PinRenderer {
                         distSeq,
                         true,
                         mode,
+                        0x00F000F0,
                         0xFFB8C4CC,
                         0x00000000,
-                        0x00F000F0,
                         0
                 );
             }
@@ -125,7 +129,15 @@ public class PinRenderer {
         filledDisc(mat, consumer, DOT_RADIUS, r, g, b, 1.0f);
     }
 
-    /** Emits a filled N-gon disc centered on the origin in the billboard plane (degenerate quads). */
+    /**
+     * Emits a filled N-gon disc centered on the origin in the billboard plane (degenerate quads).
+     *
+     * Vertex order is deliberately reversed (clockwise when viewed from +Z) so the disc's front
+     * face is -Z before the billboard mirror. Vanilla glyph quads face -Z here too, and the
+     * scale(s, -s, s) flip (the same recipe vanilla nametags use, verified in the 26.1
+     * NameTagFeatureRenderer$Storage disassembly) then turns them to face the camera. Wound the
+     * other way, the text pipelines - which cull back faces - discard the entire disc.
+     */
     private static void filledDisc(Matrix4f mat, VertexConsumer consumer, float radius, float r, float g, float b, float a) {
         for (int i = 0; i < DISC_SEGMENTS; i++) {
             double a0 = (Math.PI * 2 * i) / DISC_SEGMENTS;
@@ -136,9 +148,9 @@ public class PinRenderer {
             float y1 = (float) Math.sin(a1) * radius;
 
             addVertex(mat, consumer, 0, 0, 0, r, g, b, a);
+            addVertex(mat, consumer, x1, y1, 0, r, g, b, a);
             addVertex(mat, consumer, x0, y0, 0, r, g, b, a);
-            addVertex(mat, consumer, x1, y1, 0, r, g, b, a);
-            addVertex(mat, consumer, x1, y1, 0, r, g, b, a);
+            addVertex(mat, consumer, x0, y0, 0, r, g, b, a);
         }
     }
 
