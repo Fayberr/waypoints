@@ -31,11 +31,15 @@ public class PinRenderer {
         // Billboard rotation towards camera
         poseStack.mulPose(camera.rotation());
 
-        // Distance-compensated scale: grow proportionally with distance (with only a small floor
-        // for extreme close-ups) so the pin keeps a roughly constant apparent size on screen.
-        // The previous version capped growth at ~20 blocks, so anything farther away (i.e. most
-        // waypoints you'd actually need a marker for) shrank towards invisibility on screen.
-        float scale = (float) Math.max(0.05f, dist * 0.012f * config.pinScale);
+        // Fixed world-space scale (no distance multiplier). This is the actual root cause of the
+        // "not really 3D, feels stuck to my screen" complaint: the previous "distance-compensated"
+        // scale grew the pin's world size in direct proportion to distance, which cancels out
+        // perspective foreshortening (screen size = world size / distance) and makes the pin hold
+        // a near-constant apparent size on screen regardless of how far away it really is - i.e.
+        // it behaves like a flat HUD compass marker glued to the viewport instead of a real object
+        // sitting out in the world. A fixed world-space size lets normal perspective projection
+        // shrink it naturally with distance, exactly like vanilla entity nametags.
+        float scale = Math.max(0.01f, 0.08f * config.pinScale);
         poseStack.scale(scale, -scale, scale);
 
         WaypointColor color = WaypointColor.of(wp.getEffectiveColor());
