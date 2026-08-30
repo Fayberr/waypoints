@@ -25,7 +25,15 @@ public class WaypointStorage {
         }
         try (FileReader reader = new FileReader(file)) {
             List<Waypoint> list = GSON.fromJson(reader, WAYPOINT_LIST_TYPE);
-            return list != null ? list : new ArrayList<>();
+            if (list == null) {
+                return new ArrayList<>();
+            }
+            // Migrate pre-normalization saves: snap fractional coordinates to the block center
+            // (floor + 0.5) so markers render centered on the block. Persisted on the next save.
+            for (Waypoint wp : list) {
+                wp.snapToBlockCenter();
+            }
+            return list;
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();

@@ -42,28 +42,38 @@ public class BeamRenderer {
         float alpha = config.beaconAlpha;
         float radius = config.beaconWidth;
 
-        // Per SPEC.md: beam spans from y-128 to y+beaconHeight (relative to the waypoint), with
-        // a smooth fade at both the top and the bottom rather than an abrupt cutoff.
-        float minY = -128.0f;
+        // The pose origin is the centre of the waypoint's block. Base the beam just inside the
+        // ground (1 block below the anchor) and fade in over 1 block, so the fade completes
+        // underground: at the surface the beam is already fully opaque and reads as standing on
+        // the block. The old beam spanned y-128 with a long see-through fade, which made the
+        // cylinder's translucent far-wall rim ghost through the floor as a scalloped arch.
+        float minY = -1.0f;
         float maxY = config.beaconHeight;
+
+        // Nearly opaque core so the beam occludes itself cleanly (no see-through-its-own-far-wall
+        // ghosting where it intersects terrain); translucent outer glow for softness.
+        float coreAlpha = Math.min(1.0f, alpha * 1.5f);
+        float glowAlpha = alpha * 0.30f;
 
         collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(BEAM_TEXTURE, false), (pose, consumer) -> {
             Matrix4f mat = pose.pose();
-            // Slim, brighter inner core cylinder.
-            renderCylinder(mat, consumer, r, g, b, alpha, radius * 0.35f, minY, maxY);
+            // Slim inner core cylinder.
+            renderCylinder(mat, consumer, r, g, b, coreAlpha, radius * 0.35f, minY, maxY);
         });
 
         collector.submitCustomGeometry(poseStack, RenderTypes.beaconBeam(BEAM_TEXTURE, true), (pose, consumer) -> {
             Matrix4f mat = pose.pose();
             // Wider, softer outer glow cylinder.
-            renderCylinder(mat, consumer, r, g, b, alpha * 0.35f, radius, minY, maxY);
+            renderCylinder(mat, consumer, r, g, b, glowAlpha, radius, minY, maxY);
         });
     }
 
     private static void renderCylinder(Matrix4f mat, VertexConsumer consumer, float r, float g, float b, float a, float radius, float minY, float maxY) {
-        float fade = Math.min(8.0f, (maxY - minY) / 4.0f);
-        float bottomFadeEnd = minY + fade;
-        float topFadeStart = maxY - fade;
+        float span = maxY - minY;
+        float bottomFade = 1.0f;
+        float topFade = Math.min(8.0f, span / 4.0f);
+        float bottomFadeEnd = minY + bottomFade;
+        float topFadeStart = maxY - topFade;
 
         if (topFadeStart <= bottomFadeEnd) {
             // Degenerate/very short beam: fall back to a single top-only fade so we don't emit
@@ -72,7 +82,7 @@ public class BeamRenderer {
             return;
         }
 
-        // Bottom fade-in
+        // Bottom fade-in (short, tucked inside the ground block)
         addRing(mat, consumer, r, g, b, radius, minY, 0.0f, bottomFadeEnd, a);
         // Solid middle
         addRing(mat, consumer, r, g, b, radius, bottomFadeEnd, a, topFadeStart, a);

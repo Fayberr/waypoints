@@ -25,6 +25,7 @@ public class Waypoint {
         this.x = x;
         this.y = y;
         this.z = z;
+        snapToBlockCenter();
         this.dimension = dimension != null ? dimension : "minecraft:overworld";
         this.colorArgb = colorArgb;
         this.chroma = chroma;
@@ -35,6 +36,17 @@ public class Waypoint {
         this.icon = WaypointIcon.PIN;
         this.createdAt = System.currentTimeMillis();
         this.deathWaypoint = false;
+    }
+
+    /**
+     * Snaps X/Z to the centre of the containing block (floor + 0.5) so the beam, dot and label
+     * are visually centered on the block instead of wherever the player's eye was when the
+     * waypoint was created (or a hand-typed fractional coordinate). Y is intentionally left
+     * alone: render anchors are derived from it by floor() at draw time.
+     */
+    public void snapToBlockCenter() {
+        this.x = Math.floor(this.x) + 0.5;
+        this.z = Math.floor(this.z) + 0.5;
     }
 
     public UUID getId() {
