@@ -5,6 +5,7 @@ import net.fayber.waypoints.storage.WorldIdResolver;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -61,6 +62,25 @@ public class WaypointStore {
 
     public synchronized void clearDeathWaypoints() {
         waypoints.removeIf(Waypoint::isDeathWaypoint);
+        save();
+    }
+
+    /**
+     * Keeps only the {@code maxCount} most recent death waypoints, removing older ones.
+     * Without this, "Max Death Waypoints" in settings only ever behaved correctly for a value
+     * of 1 (clear-before-add); any higher value silently let death waypoints accumulate forever.
+     */
+    public synchronized void trimDeathWaypoints(int maxCount) {
+        List<Waypoint> deaths = waypoints.stream()
+                .filter(Waypoint::isDeathWaypoint)
+                .sorted(Comparator.comparingLong(Waypoint::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+        if (deaths.size() <= maxCount) {
+            return;
+        }
+        for (Waypoint old : deaths.subList(maxCount, deaths.size())) {
+            waypoints.remove(old);
+        }
         save();
     }
 }

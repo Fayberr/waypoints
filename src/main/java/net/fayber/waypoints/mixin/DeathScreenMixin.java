@@ -8,7 +8,8 @@ import net.fayber.waypoints.model.WaypointIcon;
 import net.fayber.waypoints.model.WaypointStore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.DeathScreen;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,15 +21,18 @@ import java.time.format.DateTimeFormatter;
 @Mixin(DeathScreen.class)
 public class DeathScreenMixin {
 
-    @Inject(method = "init", at = @At("HEAD"))
-    private void onDeathScreenInit(CallbackInfo ci) {
+    // Injected into the constructor (not init()) because Screen#init() also re-runs on every
+    // window resize while the screen is open (e.g. alt-tab, F11) - a HEAD inject on init() would
+    // silently create a fresh duplicate death waypoint on every resize. The constructor runs
+    // exactly once per DeathScreen instance, i.e. exactly once per death.
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void onDeathScreenCreated(Component causeOfDeath, boolean hardcore, LocalPlayer player, CallbackInfo ci) {
         ModConfig config = ConfigManager.get();
         if (!config.deathWaypointEnabled) {
             return;
         }
 
         Minecraft mc = Minecraft.getInstance();
-        Player player = mc.player;
         if (player == null || mc.level == null) {
             return;
         }
@@ -54,5 +58,9 @@ public class DeathScreenMixin {
         deathWp.setDeathWaypoint(true);
 
         WaypointStore.get().add(deathWp);
+
+        if (config.deathWaypointMaxCount > 1) {
+            WaypointStore.get().trimDeathWaypoints(config.deathWaypointMaxCount);
+        }
     }
 }
