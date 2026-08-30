@@ -59,7 +59,9 @@ public class WaypointsClient implements ClientModInitializer {
             WaypointStore.get().save();
         });
 
-        // In-World 3D Rendering hook (beams + billboard pins/labels).
+        // In-World 3D Rendering hook (beam + label card). All card pieces are submitted as
+        // separate submit-order buckets from this single event so the GPU draw order is
+        // guaranteed (glow < card body < card text; see PinRenderer's class doc).
         //
         // MUST be COLLECT_SUBMITS, not END_MAIN. COLLECT_SUBMITS fires at the return of
         // LevelRenderer#submitFeatures, i.e. while the submit-node collector is still being
