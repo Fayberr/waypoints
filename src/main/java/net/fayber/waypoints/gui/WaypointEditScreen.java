@@ -10,6 +10,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class WaypointEditScreen extends Screen {
+    private static final int[] PRESET_COLORS = {
+            0xFF00E5FF, 0xFF00E676, 0xFFFF1744, 0xFFD500F9,
+            0xFFFFD600, 0xFFFF6D00, 0xFF2979FF, 0xFFFFFFFF
+    };
+    private static final String[] COLOR_NAMES = {"Cyan", "Green", "Red", "Purple", "Gold", "Orange", "Blue", "White"};
+
     private final Waypoint waypoint;
     private final boolean isNew;
 
@@ -21,6 +27,11 @@ public class WaypointEditScreen extends Screen {
     private int selectedColor;
     private boolean chroma;
     private boolean beamEnabled;
+
+    private Button[] colorButtons;
+    private Button chromaButton;
+    private int colorStartY;
+    private String errorMessage;
 
     public WaypointEditScreen(Waypoint waypoint, boolean isNew) {
         super(Component.literal(isNew ? "Create Waypoint" : "Edit Waypoint"));
@@ -62,27 +73,29 @@ public class WaypointEditScreen extends Screen {
         }).bounds(centerX - 100, startY + 60, 200, 20).build());
 
         // Color Presets
-        int[] presetColors = {
-                0xFF00E5FF, 0xFF00E676, 0xFFFF1744, 0xFFD500F9,
-                0xFFFFD600, 0xFFFF6D00, 0xFF2979FF, 0xFFFFFFFF
-        };
-        String[] colorNames = {"Cyan", "Green", "Red", "Purple", "Gold", "Orange", "Blue", "White"};
-
-        int colorStartY = startY + 90;
-        for (int i = 0; i < presetColors.length; i++) {
-            final int col = presetColors[i];
+        colorStartY = startY + 90;
+        colorButtons = new Button[PRESET_COLORS.length];
+        for (int i = 0; i < PRESET_COLORS.length; i++) {
+            final int idx = i;
             int btnX = centerX - 100 + (i % 4) * 52;
             int btnY = colorStartY + (i / 4) * 24;
-            this.addRenderableWidget(Button.builder(Component.literal(colorNames[i]), btn -> {
-                selectedColor = col;
+            Button b = Button.builder(Component.literal(COLOR_NAMES[i]), btn -> {
+                selectedColor = PRESET_COLORS[idx];
                 chroma = false;
-            }).bounds(btnX, btnY, 48, 20).build());
+                refreshColorSelectionUI();
+            }).bounds(btnX, btnY, 48, 20).build();
+            colorButtons[i] = b;
+            this.addRenderableWidget(b);
         }
 
         // Chroma Rainbow toggle
-        this.addRenderableWidget(Button.builder(Component.literal("Dynamic Chroma (Rainbow)"), btn -> {
+        chromaButton = Button.builder(Component.literal("Dynamic Chroma (Rainbow)"), btn -> {
             chroma = true;
-        }).bounds(centerX - 100, colorStartY + 52, 200, 20).build());
+            refreshColorSelectionUI();
+        }).bounds(centerX - 100, colorStartY + 52, 200, 20).build();
+        this.addRenderableWidget(chromaButton);
+
+        refreshColorSelectionUI();
 
         // Save & Cancel
         this.addRenderableWidget(Button.builder(Component.literal("Save"), btn -> saveAndClose())
@@ -94,13 +107,28 @@ public class WaypointEditScreen extends Screen {
                 .build());
     }
 
+    /** Updates button labels so the currently selected color / chroma state is actually visible. */
+    private void refreshColorSelectionUI() {
+        for (int i = 0; i < colorButtons.length; i++) {
+            boolean selected = !chroma && selectedColor == PRESET_COLORS[i];
+            colorButtons[i].setMessage(Component.literal((selected ? "» " : "") + COLOR_NAMES[i]));
+        }
+        chromaButton.setMessage(Component.literal("Dynamic Chroma (Rainbow): " + (chroma ? "§aON" : "§7OFF")));
+    }
+
     private void saveAndClose() {
+        Double px = parseOrNull(xBox.getValue());
+        Double py = parseOrNull(yBox.getValue());
+        Double pz = parseOrNull(zBox.getValue());
+        if (px == null || py == null || pz == null) {
+            errorMessage = "X/Y/Z must be valid numbers.";
+            return;
+        }
+
         waypoint.setName(nameBox.getValue().isBlank() ? "Waypoint" : nameBox.getValue());
-        try {
-            waypoint.setX(Double.parseDouble(xBox.getValue().trim()));
-            waypoint.setY(Double.parseDouble(yBox.getValue().trim()));
-            waypoint.setZ(Double.parseDouble(zBox.getValue().trim()));
-        } catch (NumberFormatException ignored) {}
+        waypoint.setX(px);
+        waypoint.setY(py);
+        waypoint.setZ(pz);
 
         waypoint.setColor(selectedColor);
         waypoint.setChroma(chroma);
@@ -115,10 +143,30 @@ public class WaypointEditScreen extends Screen {
         this.onClose();
     }
 
+    private static Double parseOrNull(String s) {
+        try {
+            return Double.parseDouble(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.centeredText(this.font, this.title, this.width / 2, 15, 0xFFFFFF);
+
+        // Live preview swatch of the currently selected/effective color (animates while chroma is on).
+        int centerX = this.width / 2;
+        int previewArgb = new WaypointColor(selectedColor, chroma).getEffectiveArgb();
+        int swatchY = colorStartY - 9;
+        graphics.fill(centerX - 100, swatchY, centerX - 60, swatchY + 8, 0xFF000000 | (previewArgb & 0xFFFFFF));
+        graphics.fill(centerX - 100, swatchY, centerX - 60, swatchY + 1, 0xFFFFFFFF);
+        graphics.fill(centerX - 100, swatchY + 7, centerX - 60, swatchY + 8, 0xFFFFFFFF);
+
+        if (errorMessage != null) {
+            graphics.centeredText(this.font, Component.literal("§c" + errorMessage), centerX, this.height - 55, 0xFFFFFF);
+        }
     }
 
     @Override

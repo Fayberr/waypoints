@@ -15,7 +15,11 @@ import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 
 public class PinRenderer {
-    private static final Identifier PIN_TEXTURE = Identifier.withDefaultNamespace("textures/gui/sprites/hud/crosshair.png");
+    // The crosshair sprite is almost entirely transparent (a thin plus glyph), so mapping it
+    // across a diamond marker made the pin nearly invisible. The map "target point" icon is a
+    // small filled marker dot (the same one vanilla uses for lodestone tracking), which reads
+    // as a clean, solid geometric marker once tinted with the waypoint color.
+    private static final Identifier PIN_TEXTURE = Identifier.withDefaultNamespace("textures/map/decorations/target_point.png");
 
     public static void renderPin(PoseStack poseStack, SubmitNodeCollector collector, Camera camera, Waypoint wp, ModConfig config, double dist) {
         if (!config.floatingPinsEnabled) {
@@ -27,8 +31,11 @@ public class PinRenderer {
         // Billboard rotation towards camera
         poseStack.mulPose(camera.rotation());
 
-        // Distance-compensated scale
-        float scale = (float) Math.max(0.02f, Math.min(0.25f, dist * 0.012f * config.pinScale));
+        // Distance-compensated scale: grow proportionally with distance (with only a small floor
+        // for extreme close-ups) so the pin keeps a roughly constant apparent size on screen.
+        // The previous version capped growth at ~20 blocks, so anything farther away (i.e. most
+        // waypoints you'd actually need a marker for) shrank towards invisibility on screen.
+        float scale = (float) Math.max(0.05f, dist * 0.012f * config.pinScale);
         poseStack.scale(scale, -scale, scale);
 
         WaypointColor color = WaypointColor.of(wp.getEffectiveColor());

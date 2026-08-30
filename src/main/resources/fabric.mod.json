@@ -12,7 +12,6 @@
 		"sources": "https://github.com/Fayberr/Waypoints-Minecraft-Mod"
 	},
 	"license": "GPL-3.0-or-later",
-	"icon": "assets/waypoints/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"client": [

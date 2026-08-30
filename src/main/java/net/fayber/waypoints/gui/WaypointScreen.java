@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
@@ -31,16 +32,25 @@ public class WaypointScreen extends Screen {
     }
 
     private void rebuildUI() {
+        // Capture search-box state before clearWidgets() destroys the old widget instance.
+        // Without this, every keystroke (via setResponder below) rebuilds the whole UI and
+        // silently drops keyboard focus, forcing the user to re-click the box after each character.
+        String prevQuery = searchBox != null ? searchBox.getValue() : "";
+        boolean searchWasFocused = searchBox != null && searchBox.isFocused();
+
         this.clearWidgets();
         int centerX = this.width / 2;
         int topY = 25;
 
         // Search Box
-        String prevQuery = searchBox != null ? searchBox.getValue() : "";
         searchBox = new EditBox(this.font, centerX - 140, topY, 190, 20, Component.literal("Search"));
         searchBox.setValue(prevQuery);
         searchBox.setResponder(text -> rebuildUI());
         this.addRenderableWidget(searchBox);
+        if (searchWasFocused) {
+            this.setFocused(searchBox);
+            searchBox.setFocused(true);
+        }
 
         // "+ New" Button
         this.addRenderableWidget(Button.builder(Component.literal("+ New"), btn -> {
@@ -78,12 +88,12 @@ public class WaypointScreen extends Screen {
             }).bounds(centerX - 140, rowY, 35, 20).build());
 
             // Waypoint Name & Info button (opens Edit)
-            String nameInfo = wp.getName() + " (" + (int) wp.getX() + ", " + (int) wp.getY() + ", " + (int) wp.getZ() + ")";
+            String nameInfo = wp.getIcon().getEmoji() + " " + wp.getName() + " (" + (int) wp.getX() + ", " + (int) wp.getY() + ", " + (int) wp.getZ() + ")";
             this.addRenderableWidget(Button.builder(Component.literal(nameInfo), btn -> {
                 this.minecraft.setScreen(new WaypointEditScreen(wp, false));
             }).bounds(centerX - 100, rowY, 150, 20).build());
 
-            // Teleport Button (runs client command /tp)
+            // Teleport Button (runs client command /tp; requires server-side permission/cheats)
             this.addRenderableWidget(Button.builder(Component.literal("TP"), btn -> {
                 if (this.minecraft.player != null) {
                     this.minecraft.player.connection.sendCommand(String.format("tp %.1f %.1f %.1f", wp.getX(), wp.getY(), wp.getZ()).replace(',', '.'));
@@ -91,10 +101,19 @@ public class WaypointScreen extends Screen {
                 }
             }).bounds(centerX + 55, rowY, 35, 20).build());
 
-            // Delete Button
+            // Delete Button (asks for confirmation before permanently removing the waypoint)
             this.addRenderableWidget(Button.builder(Component.literal("§c✕"), btn -> {
-                WaypointStore.get().remove(wp.getId());
-                rebuildUI();
+                this.minecraft.setScreen(new ConfirmScreen(
+                        confirmed -> {
+                            if (confirmed) {
+                                WaypointStore.get().remove(wp.getId());
+                            }
+                            this.minecraft.setScreen(this);
+                            rebuildUI();
+                        },
+                        Component.literal("Delete Waypoint"),
+                        Component.literal("Are you sure you want to delete \"" + wp.getName() + "\"? This cannot be undone.")
+                ));
             }).bounds(centerX + 95, rowY, 25, 20).build());
         }
 
