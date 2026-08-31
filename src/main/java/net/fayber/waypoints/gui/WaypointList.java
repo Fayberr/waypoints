@@ -19,10 +19,12 @@ import java.util.List;
  * <p>All the vanilla list chrome is switched off (background, row separators, sprite scrollbar) and
  * replaced with a slim rounded scrollbar, so the rows float directly on the dimmed world.
  *
- * <p>Mouse-wheel scrolling is animated, because vanilla's is instant: the wheel only moves a
- * target, and every frame the actual amount eases toward it with a time-normalised factor, so the
- * glide feels identical at any frame rate. Scrollbar drags and keyboard navigation bypass the
- * animation and stay 1:1 with the pointer.
+ * <p>Mouse-wheel scrolling has momentum, because vanilla's is instant: the wheel adds velocity and
+ * the position coasts with an exponential decay, the way a website eases a wheel step to rest.
+ * One notch travels {@code scrollRate()} pixels in total, but spread over a fraction of a second
+ * of deceleration instead of snapping there; fast spins accumulate velocity (capped). The decay is
+ * time-normalised, so the feel is identical at any frame rate. Scrollbar drags and keyboard
+ * navigation cancel the glide and stay 1:1 with the pointer.
  *
  * <p>Vanilla positions rows at {@code firstEntryY - (int) scrollAmount} and derives the thumb from
  * an integer division: both drop the fraction of the scroll amount, which turns any fractional
@@ -34,15 +36,18 @@ public class WaypointList extends ContainerObjectSelectionList<WaypointList.Row>
     public static final int ROW_GAP = 5;
     public static final int ROW_HEIGHT = CARD_HEIGHT + ROW_GAP;
 
-    private static final double SCROLL_SPEED = 20.0;
-    private static final double SCROLL_SETTLE = 0.5;
+    /** Exponential velocity decay of the wheel glide (per second); a notch coasts ~0.4s. */
+    private static final double SCROLL_FRICTION = 10.0;
+    /** Glide speed below which the coast has visibly ended and stops. */
+    private static final double SCROLL_STOP = 6.0;
+    /** Velocity cap so a fast spin does not launch the list off-screen. */
+    private static final double SCROLL_MAX_SPEED = 4000.0;
     private static final double MAX_FRAME_SECONDS = 0.1;
 
     private final int rowWidth;
 
-    private double scrollTarget;
-    private double scrollEased;
-    private boolean applyingEasedScroll;
+    /** Current glide velocity in GUI px/s; zero when the list is at rest. */
+    private double glideVelocity;
     private long lastFrameMs = -1L;
 
     public WaypointList(Minecraft mc, int width, int height, int y0, int rowWidth, List<Row> rows) {
@@ -71,66 +76,69 @@ public class WaypointList extends ContainerObjectSelectionList<WaypointList.Row>
         this.setScrollAmount(0.0);
     }
 
+    /**
+     * Wheel input adds glide velocity; the position coasts in {@link #advanceGlide}. One notch
+     * travels {@code scrollRate()} pixels in total because v0 = distance * friction for an
+     * exponential decay.
+     */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double xDelta, double yDelta) {
         if (!this.scrollable()) {
             return super.mouseScrolled(mouseX, mouseY, xDelta, yDelta);
         }
-        this.scrollTarget = Math.clamp(this.scrollTarget - yDelta * this.scrollRate(),
-                0.0, this.maxScrollAmount());
+        this.glideVelocity = Math.clamp(
+                this.glideVelocity - yDelta * this.scrollRate() * SCROLL_FRICTION,
+                -SCROLL_MAX_SPEED, SCROLL_MAX_SPEED);
         return true;
     }
 
     /**
      * GUI pixels per wheel notch. Vanilla's own rate is {@code entryHeight / 2} (half a row),
-     * which reads as sluggish here; two rows per notch matches the config screen and the glide
-     * animation keeps fast multi-notch spins fluid.
+     * which reads as sluggish here; two rows per notch matches the config screen.
      */
     @Override
     protected double scrollRate() {
         return 2.0 * ROW_HEIGHT;
     }
 
+    /**
+     * Every scroll change that is not ours (scrollbar drag, keyboard) is authoritative: cancel
+     * the glide and apply instantly.
+     */
     @Override
     public void setScrollAmount(double amount) {
-        if (this.applyingEasedScroll) {
-            super.setScrollAmount(amount);
-            return;
-        }
-        this.scrollEased = this.scrollTarget = amount;
+        this.glideVelocity = 0.0;
         super.setScrollAmount(amount);
     }
 
     @Override
     public void extractWidgetRenderState(GuiGraphicsExtractor gfx, int mouseX, int mouseY, float partialTick) {
-        this.advanceSmoothScroll();
+        this.advanceGlide();
         super.extractWidgetRenderState(gfx, mouseX, mouseY, partialTick);
     }
 
-    private void advanceSmoothScroll() {
+    /** Advances the momentum glide and applies it to the list. */
+    private void advanceGlide() {
         long now = Util.getMillis();
         double dt = this.lastFrameMs < 0
                 ? 0.0
                 : Math.min((now - this.lastFrameMs) / 1000.0, MAX_FRAME_SECONDS);
         this.lastFrameMs = now;
-        if (this.scrollable()) {
-            this.scrollTarget = Math.clamp(this.scrollTarget, 0.0, this.maxScrollAmount());
-            if (Math.abs(this.scrollTarget - this.scrollEased) <= SCROLL_SETTLE) {
-                this.scrollEased = this.scrollTarget;
-            } else {
-                this.scrollEased += (this.scrollTarget - this.scrollEased)
-                        * (1.0 - Math.exp(-dt * SCROLL_SPEED));
-            }
-        } else {
-            this.scrollTarget = 0.0;
-            this.scrollEased = 0.0;
+        if (this.glideVelocity == 0.0 || !this.scrollable()) {
+            return;
         }
-        if (this.scrollEased != this.scrollAmount()) {
-            this.applyingEasedScroll = true;
-            super.setScrollAmount(this.scrollEased);
-            this.applyingEasedScroll = false;
-            this.scrollEased = this.scrollTarget = this.scrollAmount();
+        double scrolled = this.scrollAmount() + this.glideVelocity * dt;
+        this.glideVelocity *= Math.exp(-dt * SCROLL_FRICTION);
+        if (Math.abs(this.glideVelocity) < SCROLL_STOP) {
+            this.glideVelocity = 0.0;
         }
+        double clamped = Math.clamp(scrolled, 0.0, this.maxScrollAmount());
+        if (clamped != scrolled) {
+            // Reached an end of the list: stop dead instead of pressing against the edge.
+            this.glideVelocity = 0.0;
+        }
+        // The super setter, not the override: the glide must not cancel itself.
+        super.setScrollAmount(clamped);
     }
 
     @Override
