@@ -4,11 +4,12 @@ import net.fayber.fayberconfig.api.ConfigEntry;
 import net.fayber.fayberconfig.api.FayberConfigScreen;
 import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.config.ModConfig;
+import net.fayber.waypoints.config.TeleportButtonVisibility;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Fayber Config binding for {@link ModConfig}: all 15 fields across four categories, live
+ * Fayber Config binding for {@link ModConfig}: all fields across five categories, live
  * preview while the screen is open, Cancel reverts, Save persists via ConfigManager.
  *
  * <p>This class is only referenced from {@link ConfigScreenRouter} after
@@ -29,6 +30,9 @@ public final class WaypointsFayberScreen {
                 .tooltip("Render waypoints through blocks/walls without depth obstruction.")
                 .bool("Screen-Edge Arrows", () -> c.showOffscreenPointers, v -> c.showOffscreenPointers = v)
                 .tooltip("Show pointer arrows at screen edges for off-screen waypoints.")
+                .cycle("Hide Teleport Button", () -> c.teleportButtonVisibility, v -> c.teleportButtonVisibility = v,
+                        TeleportButtonVisibility.values(), v -> v.label)
+                .tooltip("When to hide the teleport button on waypoint cards. \"Without Operator\" keeps it everywhere except servers where you are not an operator.")
 
                 .category("Beam")
                 .bool("Enable Beacon Beam", () -> c.beaconBeamEnabled, v -> c.beaconBeamEnabled = v)

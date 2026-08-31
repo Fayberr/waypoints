@@ -1,6 +1,8 @@
 package net.fayber.waypoints.gui;
 
 import net.fayber.waypoints.compat.ConfigScreenRouter;
+import net.fayber.waypoints.config.ConfigManager;
+import net.fayber.waypoints.config.TeleportButtonVisibility;
 import net.fayber.waypoints.gui.style.Icons;
 import net.fayber.waypoints.gui.style.Theme;
 import net.fayber.waypoints.gui.style.Ui;
@@ -16,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -124,14 +127,27 @@ public class WaypointScreen extends Screen {
         WaypointCard card = new WaypointCard(0, 0, 10, WaypointList.CARD_HEIGHT, wp,
                 () -> this.minecraft.setScreen(new WaypointEditScreen(wp, false)));
 
-        IconCardButton teleport = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons.TELEPORT,
-                () -> this.teleportTo(wp), Component.literal("Teleport to this waypoint"));
-
         IconCardButton delete = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons.TRASH,
                 () -> this.confirmDelete(wp), Component.literal("Delete this waypoint"));
 
-        List<AbstractWidget> widgets = List.of(visibility, card, teleport, delete);
-        return new WaypointList.Row(widgets, new int[] {ACTION_SIZE, -1, ACTION_SIZE, ACTION_SIZE});
+        // The teleport button is optional: the config can hide it in the current context.
+        if (this.teleportVisible()) {
+            IconCardButton teleport = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons.TELEPORT,
+                    () -> this.teleportTo(wp), Component.literal("Teleport to this waypoint"));
+            return new WaypointList.Row(List.of(visibility, card, teleport, delete),
+                    new int[] {ACTION_SIZE, -1, ACTION_SIZE, ACTION_SIZE});
+        }
+        return new WaypointList.Row(List.of(visibility, card, delete),
+                new int[] {ACTION_SIZE, -1, ACTION_SIZE});
+    }
+
+    /** Whether the config allows the teleport button in the current world and with these rights. */
+    private boolean teleportVisible() {
+        TeleportButtonVisibility mode = ConfigManager.get().teleportButtonVisibility;
+        // "Operator" = the server would let this player run the teleport command itself.
+        boolean hasPermission = this.minecraft.player != null && this.minecraft.player.permissions()
+                .hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        return mode.shows(this.minecraft.hasSingleplayerServer(), hasPermission);
     }
 
     private void createHere() {

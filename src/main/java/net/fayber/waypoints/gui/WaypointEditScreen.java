@@ -129,17 +129,18 @@ public class WaypointEditScreen extends Screen {
         this.addRenderableWidget(new ToggleCard(this.contentX, y, toggleW, this.fieldHeight,
                 Ui.ui("Beacon beam"), () -> this.beamEnabled, v -> this.beamEnabled = v));
         this.addRenderableWidget(new ToggleCard(this.contentX + this.contentW - toggleW, y, toggleW, this.fieldHeight,
-                Ui.ui("Rainbow"), () -> this.chroma, v -> this.chroma = v));
+                Ui.ui("Rainbow"), () -> this.chroma, this::setChroma));
         y += this.fieldHeight + this.sectionGap + this.labelHeight;
 
         // Colour ---------------------------------------------------------------
         this.colourY = y;
         int pickerWidth = this.contentW - SIDE_WIDTH - GAP;
         this.picker = new ColorPicker(this.contentX, y, pickerWidth, pickerHeight, this.selectedColor);
+        this.setChroma(this.chroma); // initial picker emphasis from the saved rainbow state
         this.picker.onChange(() -> {
             this.selectedColor = this.picker.getColor();
             // Picking a colour is an explicit choice, so it wins over the animated rainbow.
-            this.chroma = false;
+            this.setChroma(false);
             this.syncHexField();
         });
         this.addRenderableWidget(this.picker);
@@ -202,13 +203,24 @@ public class WaypointEditScreen extends Screen {
             return;
         }
         this.selectedColor = 0xFF000000 | Integer.parseInt(hex, 16);
-        this.chroma = false;
+        this.setChroma(false);
         this.picker.setColor(this.selectedColor);
     }
 
     /** What the waypoint will actually look like, including the rainbow animation. */
     private int previewColor() {
         return new WaypointColor(this.selectedColor, this.chroma).getEffectiveArgb() | 0xFF000000;
+    }
+
+    /**
+     * Single writer for the rainbow flag: while rainbow wins, the picker is de-emphasised (drawn
+     * darker, still clickable), because its colour is not what is shown on the map.
+     */
+    private void setChroma(boolean chroma) {
+        this.chroma = chroma;
+        if (this.picker != null) {
+            this.picker.setDimmed(chroma);
+        }
     }
 
     // ------------------------------------------------------------------ saving

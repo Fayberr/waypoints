@@ -5,6 +5,7 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.config.ModConfig;
+import net.fayber.waypoints.config.TeleportButtonVisibility;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -37,6 +38,13 @@ public final class WaypointsClothScreen {
                 .setDefaultValue(true)
                 .setTooltip(Component.literal("Show pointer arrows at screen edges for off-screen waypoints."))
                 .setSaveConsumer(val -> config.showOffscreenPointers = val)
+                .build());
+
+        general.addEntry(eb.startEnumSelector(Component.literal("Hide Teleport Button"),
+                        TeleportButtonVisibility.class, config.teleportButtonVisibility)
+                .setDefaultValue(TeleportButtonVisibility.NEVER)
+                .setTooltip(Component.literal("When to hide the teleport button on waypoint cards."))
+                .setSaveConsumer(val -> config.teleportButtonVisibility = val)
                 .build());
 
         general.addEntry(eb.startBooleanToggle(Component.literal("Xaero World Map Markers"), config.xaeroWorldMapEnabled)

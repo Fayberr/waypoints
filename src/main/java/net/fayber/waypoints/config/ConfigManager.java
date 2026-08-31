@@ -26,6 +26,10 @@ public class ConfigManager {
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
             ModConfig loaded = GSON.fromJson(reader, ModConfig.class);
             if (loaded != null) {
+                if (loaded.teleportButtonVisibility == null) {
+                    // Gson leaves unknown enum names as null instead of throwing.
+                    loaded.teleportButtonVisibility = TeleportButtonVisibility.NEVER;
+                }
                 config = loaded;
             }
         } catch (Exception e) {

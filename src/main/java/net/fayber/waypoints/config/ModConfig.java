@@ -12,6 +12,8 @@ public class ModConfig {
     public float textScale = 1.0f;
     public boolean alwaysOnTop = true;
     public boolean showOffscreenPointers = true;
+    // When the teleport button on a waypoint card is hidden; see TeleportButtonVisibility.
+    public TeleportButtonVisibility teleportButtonVisibility = TeleportButtonVisibility.NEVER;
     // Distance in blocks at which the label stops shrinking with perspective: past this the
     // label holds a constant readable on-screen size instead of collapsing to a pixel at
     // long range. Closer than this it scales normally.

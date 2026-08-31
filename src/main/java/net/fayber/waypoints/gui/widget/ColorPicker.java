@@ -25,16 +25,24 @@ import net.minecraft.util.Mth;
  * <p>Both the square and the hue bar get rounded corners by insetting each column/row by the
  * corner arc, and the gradient end colours are re-evaluated at the clipped fractions so the ramp
  * stays continuous where it is cut.
+ *
+ * <p>{@link #setDimmed} de-emphasises the whole picker (drawn at a fraction of its brightness)
+ * while keeping every interaction alive. It marks "this control is not the thing winning right
+ * now" without locking it: picking a colour while dimmed is exactly how the caller ends that
+ * state, so the input stays on.
  */
 public class ColorPicker extends AbstractWidget {
     /** Width of the hue bar and the gap between it and the square. */
     private static final int HUE_WIDTH = 14;
     private static final int GAP = 10;
     private static final float SQUARE_RADIUS = 5.0f;
+    /** Brightness fraction of every colour while {@link #setDimmed de-emphasised}. */
+    private static final float DIM = 0.5f;
 
     private float hue;
     private float saturation;
     private float value;
+    private boolean dimmed;
 
     /** Which sub-control the current drag started on, so leaving it mid-drag still tracks. */
     private enum Drag {
@@ -53,6 +61,16 @@ public class ColorPicker extends AbstractWidget {
 
     public ColorPicker onChange(Runnable onChange) {
         this.onChange = onChange;
+        return this;
+    }
+
+    /**
+     * De-emphasises the picker: everything is drawn at {@link #DIM} of its brightness, but the
+     * picker stays interactive, so clicking it still picks a colour (which is how the caller
+     * ends the dimmed state).
+     */
+    public ColorPicker setDimmed(boolean dimmed) {
+        this.dimmed = dimmed;
         return this;
     }
 
@@ -167,6 +185,9 @@ public class ColorPicker extends AbstractWidget {
         for (int col = 0; col < size; col++) {
             float sat = (col + 0.5f) / size;
             int top = 0xFF000000 | (Mth.hsvToRgb(this.hue, sat, 1.0f) & 0x00FFFFFF);
+            if (this.dimmed) {
+                top = scaleRgb(top, DIM);
+            }
             int inset = cornerInset(col + 0.5f, size - col - 0.5f, radius);
             if (2 * inset >= size) {
                 continue;
@@ -192,6 +213,9 @@ public class ColorPicker extends AbstractWidget {
 
         for (int row = 0; row < h; row++) {
             int color = 0xFF000000 | (Mth.hsvToRgb((row + 0.5f) / h, 1.0f, 1.0f) & 0x00FFFFFF);
+            if (this.dimmed) {
+                color = scaleRgb(color, DIM);
+            }
             int inset = cornerInset(row + 0.5f, h - row - 0.5f, radius);
             if (2 * inset >= w) {
                 continue;
@@ -201,14 +225,15 @@ public class ColorPicker extends AbstractWidget {
     }
 
     private void drawHandles(GuiGraphicsExtractor gfx, int square) {
+        float dim = this.dimmed ? DIM : 1.0f;
         // Square handle: filled discs, a dark rim inside a white ring, so it reads over both the
         // white and the black corners of the square. The centre dot is the colour under the
         // handle, so the cursor doubles as a preview of what you are pointing at.
         float hx = this.getX() + this.saturation * square;
         float hy = this.getY() + (1.0f - this.value) * square;
-        int under = 0xFF000000 | (Mth.hsvToRgb(this.hue, this.saturation, this.value) & 0x00FFFFFF);
+        int under = scaleRgb(0xFF000000 | (Mth.hsvToRgb(this.hue, this.saturation, this.value) & 0x00FFFFFF), dim);
         Ui.circle(gfx, hx, hy, 5.0f, 0x99000000);
-        Ui.circle(gfx, hx, hy, 4.0f, 0xFFFFFFFF);
+        Ui.circle(gfx, hx, hy, 4.0f, scaleRgb(0xFFFFFFFF, dim));
         Ui.circle(gfx, hx, hy, 2.5f, under);
 
         // Hue handle: a slim bar straddling the whole width of the bar. It is built from two filled
@@ -217,8 +242,8 @@ public class ColorPicker extends AbstractWidget {
         float by = this.getY() + this.hue * this.getHeight();
         float bx = this.hueX() - 2.0f;
         float bw = HUE_WIDTH + 4.0f;
-        int hueColor = 0xFF000000 | (Mth.hsvToRgb(this.hue, 1.0f, 1.0f) & 0x00FFFFFF);
-        Ui.pill(gfx, bx, by - 3.5f, bw, 7.0f, 0xFFFFFFFF);
+        int hueColor = scaleRgb(0xFF000000 | (Mth.hsvToRgb(this.hue, 1.0f, 1.0f) & 0x00FFFFFF), dim);
+        Ui.pill(gfx, bx, by - 3.5f, bw, 7.0f, scaleRgb(0xFFFFFFFF, dim));
         Ui.pill(gfx, bx + 1.5f, by - 2.0f, bw - 3.0f, 4.0f, hueColor);
     }
 
@@ -240,7 +265,7 @@ public class ColorPicker extends AbstractWidget {
         int r = Math.round(((argb >> 16) & 0xFF) * f);
         int g = Math.round(((argb >> 8) & 0xFF) * f);
         int b = Math.round((argb & 0xFF) * f);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
+        return (argb & 0xFF000000) | (r << 16) | (g << 8) | b;
     }
 
     @Override
