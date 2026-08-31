@@ -81,6 +81,16 @@ public class WaypointList extends ContainerObjectSelectionList<WaypointList.Row>
         return true;
     }
 
+    /**
+     * GUI pixels per wheel notch. Vanilla's own rate is {@code entryHeight / 2} (half a row),
+     * which reads as sluggish here; two rows per notch matches the config screen and the glide
+     * animation keeps fast multi-notch spins fluid.
+     */
+    @Override
+    protected double scrollRate() {
+        return 2.0 * ROW_HEIGHT;
+    }
+
     @Override
     public void setScrollAmount(double amount) {
         if (this.applyingEasedScroll) {
