@@ -1,0 +1,13 @@
+Modern Waypoints
+Copyright (C) Fayber
+Licensed under GPL-3.0-or-later (see LICENSE)
+
+This mod includes artwork from Lucide (https://lucide.dev), used as UI icons:
+
+  Lucide
+  Copyright (c) Lucide Contributors
+  Licensed under the ISC License (https://github.com/lucide-icons/lucide/blob/main/LICENSE)
+
+  The icon path data (plus, search, eye, eye-off, trash-2, settings, navigation,
+  map-pin) is embedded in tools/gen-icons.java and rendered into
+  src/main/resources/assets/waypoints/textures/gui/icons.png at build time.

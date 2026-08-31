@@ -35,5 +35,6 @@
 		"cloth-config": "*",
 		"fayberconfig": "*",
 		"xaeroworldmap": "*"
-	}
+	},
+	"credits": "UI icons from Lucide (lucide.dev, ISC license)"
 }

@@ -201,13 +201,15 @@ public class ColorPicker extends AbstractWidget {
     }
 
     private void drawHandles(GuiGraphicsExtractor gfx, int square) {
-        // Square handle: a white ring with a dark ring outside it, so it stays visible over both
-        // the white and the black corners of the square. The rings are hollow, so the colour under
-        // the handle stays visible inside it.
+        // Square handle: filled discs, a dark rim inside a white ring, so it reads over both the
+        // white and the black corners of the square. The centre dot is the colour under the
+        // handle, so the cursor doubles as a preview of what you are pointing at.
         float hx = this.getX() + this.saturation * square;
         float hy = this.getY() + (1.0f - this.value) * square;
-        Ui.ring(gfx, hx, hy, 4.5f, 1.0f, 0x99000000);
-        Ui.ring(gfx, hx, hy, 3.5f, 1.5f, 0xFFFFFFFF);
+        int under = 0xFF000000 | (Mth.hsvToRgb(this.hue, this.saturation, this.value) & 0x00FFFFFF);
+        Ui.circle(gfx, hx, hy, 5.0f, 0x99000000);
+        Ui.circle(gfx, hx, hy, 4.0f, 0xFFFFFFFF);
+        Ui.circle(gfx, hx, hy, 2.5f, under);
 
         // Hue handle: a slim bar straddling the whole width of the bar. It is built from two filled
         // capsules, the inner one painted in the hue it sits on, because a transparent middle
@@ -215,9 +217,9 @@ public class ColorPicker extends AbstractWidget {
         float by = this.getY() + this.hue * this.getHeight();
         float bx = this.hueX() - 2.0f;
         float bw = HUE_WIDTH + 4.0f;
-        int under = 0xFF000000 | (Mth.hsvToRgb(this.hue, 1.0f, 1.0f) & 0x00FFFFFF);
+        int hueColor = 0xFF000000 | (Mth.hsvToRgb(this.hue, 1.0f, 1.0f) & 0x00FFFFFF);
         Ui.pill(gfx, bx, by - 3.5f, bw, 7.0f, 0xFFFFFFFF);
-        Ui.pill(gfx, bx + 1.5f, by - 2.0f, bw - 3.0f, 4.0f, under);
+        Ui.pill(gfx, bx + 1.5f, by - 2.0f, bw - 3.0f, 4.0f, hueColor);
     }
 
     /**

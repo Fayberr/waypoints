@@ -163,8 +163,8 @@ public final class Ui {
      * inset into it, which keeps both edges anti-aliased.
      *
      * <p>{@code fill} must be opaque. Painting a transparent colour over the border does not erase
-     * it (there is nothing to erase with in a plain alpha blend), so a hollow outline has to be
-     * built from arcs instead: see {@link #ring}.
+     * it, because alpha blending cannot erase; anything hollow has to be composed from filled
+     * shapes instead.
      */
     public static void roundRectBorder(GuiGraphicsExtractor gfx, float x, float y, float w, float h,
                                        float radius, int fill, int border, float thickness) {
@@ -190,43 +190,6 @@ public final class Ui {
     /** Anti-aliased filled circle. */
     public static void circle(GuiGraphicsExtractor gfx, float cx, float cy, float radius, int color) {
         roundRect(gfx, cx - radius, cy - radius, radius * 2.0f, radius * 2.0f, radius, color);
-    }
-
-    /**
-     * Circle outline with a genuinely transparent middle, drawn as a fan of overlapping filled
-     * discs along the path (a round brush stamp). Two reasons the "obvious" shapes fail here: a
-     * filled disc with a transparent disc painted on top would not subtract anything (alpha
-     * blending cannot erase), and a chain of round-capped chords leaves sliver gaps at the joints
-     * where the anti-aliased caps meet at an angle. Stamped discs overlap by design, so the band
-     * comes out solid; the scallops between stamps are far below one physical pixel.
-     */
-    public static void ring(GuiGraphicsExtractor gfx, float cx, float cy, float radius, float thickness, int color) {
-        float s = scale();
-        float t = Math.max(1.0f, thickness);
-        // Stamps every 0.6 diameters: overlap deep enough that the envelope reads as a smooth arc.
-        float circumference = (float) (Math.PI * 2.0) * radius * s;
-        int stamps = Math.clamp(Math.round(circumference / (t * s * 0.6f)), 8, 96);
-        for (int i = 0; i < stamps; i++) {
-            double angle = Math.PI * 2.0 * i / stamps;
-            circle(gfx, cx + radius * (float) Math.cos(angle), cy + radius * (float) Math.sin(angle),
-                    t / 2.0f, color);
-        }
-    }
-
-    /** Rounded bar between two points, used for the icon strokes. */
-    public static void stroke(GuiGraphicsExtractor gfx, float x1, float y1, float x2, float y2,
-                              float thickness, int color) {
-        float dx = x2 - x1;
-        float dy = y2 - y1;
-        float len = (float) Math.sqrt(dx * dx + dy * dy);
-        if (len <= 0.0f) {
-            return;
-        }
-        gfx.pose().pushMatrix();
-        gfx.pose().translate(x1, y1);
-        gfx.pose().rotate((float) Math.atan2(dy, dx));
-        pill(gfx, 0.0f, -thickness / 2.0f, len, thickness, color);
-        gfx.pose().popMatrix();
     }
 
     /**

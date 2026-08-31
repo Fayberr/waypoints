@@ -1,7 +1,6 @@
 package net.fayber.waypoints.gui;
 
 import net.fayber.waypoints.compat.ConfigScreenRouter;
-import net.fayber.waypoints.gui.style.Glyph;
 import net.fayber.waypoints.gui.style.Icons;
 import net.fayber.waypoints.gui.style.Theme;
 import net.fayber.waypoints.gui.style.Ui;
@@ -64,7 +63,7 @@ public class WaypointScreen extends Screen {
 
         String previousQuery = this.searchBox != null ? this.searchBox.getValue() : "";
         this.searchBox = new StyledEditBox(this.font, this.contentX, toolbarY, searchWidth, TOOLBAR_HEIGHT,
-                Component.literal("Search waypoints"), Icons::search);
+                Component.literal("Search waypoints"), Icons.SEARCH);
         this.searchBox.setMaxLength(64);
         this.searchBox.setHint(Ui.ui("Search"));
         this.searchBox.setValue(previousQuery);
@@ -73,7 +72,7 @@ public class WaypointScreen extends Screen {
 
         this.addRenderableWidget(new CardButton(this.contentX + this.contentW - newWidth, toolbarY,
                 newWidth, TOOLBAR_HEIGHT, Component.literal("New"), this::createHere,
-                CardButton.Style.STRONG, Icons::plus));
+                CardButton.Style.STRONG, Icons.PLUS));
 
         this.listTop = toolbarY + TOOLBAR_HEIGHT + 12;
         this.listBottom = this.height - FOOTER_HEIGHT - 28;
@@ -89,7 +88,7 @@ public class WaypointScreen extends Screen {
         int footerY = this.height - FOOTER_HEIGHT - 14;
         int footerWidth = 112;
         this.addRenderableWidget(new CardButton(this.contentX, footerY, footerWidth, FOOTER_HEIGHT,
-                Component.literal("Settings"), this::openSettings, CardButton.Style.GHOST, Icons::gear));
+                Component.literal("Settings"), this::openSettings, CardButton.Style.GHOST, Icons.GEAR));
         this.addRenderableWidget(new CardButton(this.contentX + this.contentW - footerWidth, footerY,
                 footerWidth, FOOTER_HEIGHT, Component.literal("Done"), this::onClose));
     }
@@ -115,7 +114,7 @@ public class WaypointScreen extends Screen {
         // The glyph is supplied lazily rather than chosen once, so toggling visibility swaps the
         // eye for the crossed-out eye without rebuilding the row.
         IconCardButton visibility = new IconCardButton(0, 0, ACTION_SIZE,
-                () -> wp.isVisible() ? (Glyph) Icons::eye : (Glyph) Icons::eyeOff,
+                () -> wp.isVisible() ? Icons.EYE : Icons.EYE_OFF,
                 () -> {
                     wp.setVisible(!wp.isVisible());
                     WaypointStore.get().save();
@@ -125,10 +124,10 @@ public class WaypointScreen extends Screen {
         WaypointCard card = new WaypointCard(0, 0, 10, WaypointList.CARD_HEIGHT, wp,
                 () -> this.minecraft.setScreen(new WaypointEditScreen(wp, false)));
 
-        IconCardButton teleport = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons::teleport,
+        IconCardButton teleport = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons.TELEPORT,
                 () -> this.teleportTo(wp), Component.literal("Teleport to this waypoint"));
 
-        IconCardButton delete = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons::trash,
+        IconCardButton delete = new IconCardButton(0, 0, ACTION_SIZE, () -> Icons.TRASH,
                 () -> this.confirmDelete(wp), Component.literal("Delete this waypoint"));
 
         List<AbstractWidget> widgets = List.of(visibility, card, teleport, delete);

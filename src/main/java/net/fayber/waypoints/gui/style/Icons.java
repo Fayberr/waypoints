@@ -1,110 +1,109 @@
 package net.fayber.waypoints.gui.style;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.Resource;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
 
 /**
- * The small vector glyphs used on the waypoint screens, drawn from {@link Ui} primitives rather
- * than a sprite sheet.
+ * The UI glyphs, as sprites from a pre-rendered atlas ({@code textures/gui/icons.png}, generated
+ * by {@code tools/gen-icons.java} from the Lucide icon set, ISC license, see NOTICE).
  *
- * <p>Every icon is defined inside a square box of side {@code size} centred on {@code (cx, cy)} and
- * scales with it, so the same code is sharp at any GUI scale and any button size. Stroke weight is
- * derived from the size so the icons keep their proportions instead of getting spindly when large.
+ * <p>This replaced drawing glyphs from Ui primitives each frame, which alias badly: strokes are
+ * re-rasterised at whatever odd size a button happens to be, so curves come out lumpy and round
+ * joints develop slivers. The atlas instead holds each icon rasterised once at high resolution
+ * with real anti-aliasing, and drawing it is a bilinear-filtered tinted quad, which stays smooth
+ * at every GUI scale and every button size, the way a UI toolkit does it.
+ *
+ * <p>The atlas texture registers itself with a {@code LINEAR} sampler: {@link DynamicTexture}
+ * hard-codes the blocky {@code NEAREST} one, and in this rendering stack filtering is a property
+ * of the sampler, not the texture, so the subclass below swaps it after construction.
  */
 public final class Icons {
+    /** Atlas cell, 3x the 24-unit Lucide grid; must match tools/gen-icons.java. */
+    private static final int CELL = 72;
+    private static final int COLS = 4;
+    private static final int ATLAS_W = CELL * COLS;
+    private static final int ATLAS_H = CELL * 2;
+    /** Where the PNG lives in resources. */
+    private static final Identifier ATLAS_ASSET =
+            Identifier.fromNamespaceAndPath("waypoints", "textures/gui/icons.png");
+    /** The registered texture name used when blitting. */
+    private static final Identifier ATLAS_TEXTURE =
+            Identifier.fromNamespaceAndPath("waypoints", "gui/icons");
+
+    /** Plus sign, for "new waypoint". */
+    public static final Glyph PLUS = glyph(0);
+    /** Magnifier, for the search field. */
+    public static final Glyph SEARCH = glyph(1);
+    /** Open eye (waypoint shown). */
+    public static final Glyph EYE = glyph(2);
+    /** Crossed-out eye (waypoint hidden). */
+    public static final Glyph EYE_OFF = glyph(3);
+    /** Waste bin, for "delete waypoint". */
+    public static final Glyph TRASH = glyph(4);
+    /** Gear, for "settings". */
+    public static final Glyph GEAR = glyph(5);
+    /** Paper-plane style navigation arrow, for "teleport here". */
+    public static final Glyph TELEPORT = glyph(6);
+    /** Solid map pin, used as the colour swatch on a waypoint card. */
+    public static final Glyph PIN = glyph(7);
+
+    private static boolean registered;
+
     private Icons() {
     }
 
-    private static float stroke(float size) {
-        return Math.max(1.0f, size / 9.0f);
+    private static Glyph glyph(int index) {
+        return (gfx, cx, cy, size, color) -> draw(gfx, index, cx, cy, size, color);
     }
 
-    /** Plus sign, for "new waypoint". */
-    public static void plus(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        float arm = size / 2.0f;
-        Ui.pill(gfx, cx - arm, cy - t / 2.0f, size, t, color);
-        Ui.pill(gfx, cx - t / 2.0f, cy - arm, t, size, color);
+    private static void draw(GuiGraphicsExtractor gfx, int index, float cx, float cy, float size, int color) {
+        ensureRegistered();
+        float s = Ui.scale();
+        int px = Math.max(1, Math.round(size * s));
+        int x0 = Math.round(cx * s) - px / 2;
+        int y0 = Math.round(cy * s) - px / 2;
+        int u = (index % COLS) * CELL;
+        int v = (index / COLS) * CELL;
+        gfx.pose().pushMatrix();
+        gfx.pose().scale(1.0f / s, 1.0f / s);
+        gfx.blit(RenderPipelines.GUI_TEXTURED, ATLAS_TEXTURE, x0, y0, u, v, px, px, ATLAS_W, ATLAS_H, color);
+        gfx.pose().popMatrix();
     }
 
-    /** Magnifier, used as the search field's leading glyph. */
-    public static void search(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        float r = size * 0.32f;
-        float lensX = cx - size * 0.08f;
-        float lensY = cy - size * 0.08f;
-        Ui.ring(gfx, lensX, lensY, r, t, color);
-        float d = r * 0.7071f;
-        Ui.stroke(gfx, lensX + d, lensY + d, cx + size * 0.42f, cy + size * 0.42f, t, color);
-    }
-
-    /** Open eye (waypoint shown): a ring with a filled pupil. */
-    public static void eye(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        Ui.ring(gfx, cx, cy, size * 0.42f, t, color);
-        Ui.circle(gfx, cx, cy, size * 0.16f, color);
-    }
-
-    /** Crossed-out eye (waypoint hidden). */
-    public static void eyeOff(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        Ui.ring(gfx, cx, cy, size * 0.42f, t, color);
-        float d = size * 0.46f;
-        Ui.stroke(gfx, cx - d, cy - d, cx + d, cy + d, t, color);
-    }
-
-    /** Arrow pointing up and to the right, for "teleport here". */
-    public static void teleport(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        float a = size * 0.38f;
-        Ui.stroke(gfx, cx - a, cy + a, cx + a, cy - a, t, color);
-        Ui.stroke(gfx, cx + a, cy - a, cx - size * 0.02f, cy - a, t, color);
-        Ui.stroke(gfx, cx + a, cy - a, cx + a, cy + size * 0.02f, t, color);
-    }
-
-    /** Waste bin, for "delete waypoint". */
-    public static void trash(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        float halfW = size * 0.34f;
-        float lidY = cy - size * 0.28f;
-        // Lid bar plus the little handle above it.
-        Ui.pill(gfx, cx - halfW - t, lidY, (halfW + t) * 2.0f, t, color);
-        Ui.pill(gfx, cx - size * 0.14f, lidY - t * 1.6f, size * 0.28f, t, color);
-        // Body drawn as three strokes (two slightly tapered walls and a base) rather than a
-        // rounded rect with a transparent middle: alpha blending cannot punch a hole, so an
-        // "outline" made that way would come out as a solid block.
-        float bodyTop = lidY + t * 1.4f;
-        float bodyBottom = bodyTop + size * 0.58f;
-        float taper = size * 0.05f;
-        Ui.stroke(gfx, cx - halfW * 0.86f, bodyTop, cx - halfW * 0.86f + taper, bodyBottom, t, color);
-        Ui.stroke(gfx, cx + halfW * 0.86f, bodyTop, cx + halfW * 0.86f - taper, bodyBottom, t, color);
-        Ui.stroke(gfx, cx - halfW * 0.86f + taper, bodyBottom, cx + halfW * 0.86f - taper, bodyBottom, t, color);
-    }
-
-    /** Gear, for "settings". */
-    public static void gear(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float t = stroke(size);
-        float r = size * 0.42f;
-        Ui.ring(gfx, cx, cy, r * 0.62f, t, color);
-        // Six teeth around the hub.
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.PI * i / 3.0;
-            float dx = (float) Math.cos(angle);
-            float dy = (float) Math.sin(angle);
-            Ui.stroke(gfx, cx + dx * r * 0.68f, cy + dy * r * 0.68f, cx + dx * r, cy + dy * r, t, color);
+    /** Loads and registers the atlas the first time an icon is drawn (always on the render thread). */
+    private static void ensureRegistered() {
+        if (registered) {
+            return;
+        }
+        registered = true;
+        try {
+            Resource resource = Minecraft.getInstance().getResourceManager().getResource(ATLAS_ASSET)
+                    .orElseThrow(() -> new IllegalStateException("missing " + ATLAS_ASSET));
+            NativeImage image;
+            try (InputStream in = resource.open()) {
+                image = NativeImage.read(in);
+            }
+            Minecraft.getInstance().getTextureManager().register(ATLAS_TEXTURE, new LinearTexture(image));
+        } catch (Exception e) {
+            LoggerFactory.getLogger("waypoints").error("Failed to load the icon atlas", e);
         }
     }
 
-    /** Solid location pin, used as the colour swatch on a waypoint card. */
-    public static void pin(GuiGraphicsExtractor gfx, float cx, float cy, float size, int color) {
-        float r = size * 0.34f;
-        Ui.circle(gfx, cx, cy - size * 0.12f, r, color);
-        // Tapering tail: a short stack of shrinking bars reads as a point at this size.
-        int steps = Math.max(3, Math.round(size / 2.0f));
-        for (int i = 0; i < steps; i++) {
-            float f = (float) i / steps;
-            float w = r * 1.15f * (1.0f - f);
-            float y = cy - size * 0.12f + r * 0.55f + f * size * 0.42f;
-            Ui.rect(gfx, cx - w / 2.0f, y, w, size * 0.42f / steps + 0.5f, color);
+    /** {@link DynamicTexture} always installs a NEAREST sampler; icons need bilinear. */
+    private static final class LinearTexture extends DynamicTexture {
+        private LinearTexture(NativeImage image) {
+            super(() -> "waypoints/icons", image);
+            this.sampler = RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR);
         }
     }
 }

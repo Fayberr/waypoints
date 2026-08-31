@@ -52,7 +52,7 @@ public class WaypointCard extends AbstractButton {
         if (!visible) {
             pinColor = fade(pinColor, 0.35f);
         }
-        Icons.pin(gfx, this.getX() + PAD_X + PIN_SIZE / 2.0f, this.getY() + this.getHeight() / 2.0f,
+        Icons.PIN.draw(gfx, this.getX() + PAD_X + PIN_SIZE / 2.0f, this.getY() + this.getHeight() / 2.0f,
                 PIN_SIZE, pinColor);
 
         int textX = this.getX() + TEXT_LEFT;
