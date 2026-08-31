@@ -27,6 +27,9 @@ public class ModConfig {
     // Integrations
     // Draw waypoints on Xaero's World Map (only has an effect when that mod is installed).
     public boolean xaeroWorldMapEnabled = true;
+    // Size of the markers on Xaero's World Map, as a multiplier of the default. Scales the dot,
+    // the name plate and the marker's cull/hover boxes together.
+    public float xaeroMarkerScale = 1.0f;
 
     // Death Waypoints
     public boolean deathWaypointEnabled = true;

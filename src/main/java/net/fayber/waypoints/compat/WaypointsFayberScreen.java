@@ -57,6 +57,8 @@ public final class WaypointsFayberScreen {
                 .category("Integrations")
                 .bool("Xaero World Map Markers", () -> c.xaeroWorldMapEnabled, v -> c.xaeroWorldMapEnabled = v)
                 .tooltip("Draw your waypoints on Xaero's World Map. Only has an effect when that mod is installed.")
+                .floatSlider("Xaero Marker Size", () -> c.xaeroMarkerScale, v -> c.xaeroMarkerScale = v, 0.5f, 3.0f, 0.05f)
+                .tooltip("Size of the waypoint markers on Xaero's World Map, as a multiple of the default. Scales the dot and its name plate together.")
 
                 .category("Death Waypoints")
                 .bool("Enable Death Waypoints", () -> c.deathWaypointEnabled, v -> c.deathWaypointEnabled = v)

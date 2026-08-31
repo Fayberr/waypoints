@@ -45,6 +45,13 @@ public final class WaypointsClothScreen {
                 .setSaveConsumer(val -> config.xaeroWorldMapEnabled = val)
                 .build());
 
+        general.addEntry(eb.startFloatField(Component.literal("Xaero Marker Size"), config.xaeroMarkerScale)
+                .setDefaultValue(1.0f)
+                .setMin(0.5f).setMax(3.0f)
+                .setTooltip(Component.literal("Size of the waypoint markers on Xaero's World Map, as a multiple of the default."))
+                .setSaveConsumer(val -> config.xaeroMarkerScale = val)
+                .build());
+
         ConfigCategory visuals = builder.getOrCreateCategory(Component.literal("Visuals"));
         visuals.addEntry(eb.startFloatField(Component.literal("Beacon Beam Width"), config.beaconWidth)
                 .setDefaultValue(0.20f)

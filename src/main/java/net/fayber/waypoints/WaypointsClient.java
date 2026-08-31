@@ -38,6 +38,11 @@ public class WaypointsClient implements ClientModInitializer {
     public void onInitializeClient() {
         ConfigManager.load();
 
+        // Dev-only: -Dwaypoints.preview=list|edit|new opens that screen with demo data at boot.
+        if (net.fayber.waypoints.dev.PreviewHook.enabled()) {
+            net.fayber.waypoints.dev.PreviewHook.register();
+        }
+
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.withDefaultNamespace("waypoints"));
 
         // Register keybindings

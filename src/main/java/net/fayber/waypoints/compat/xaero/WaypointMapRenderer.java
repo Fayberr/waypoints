@@ -98,6 +98,12 @@ public final class WaypointMapRenderer extends ElementRenderer<Waypoint, Waypoin
         // Xaero spaces elements out in depth so later ones win the depth test; skipping this makes
         // overlapping markers flicker.
         pose.translate(0.0, 0.0, depth);
+        // One scale for the whole marker (dot, plate and name), matching the reader's boxes. Only
+        // X and Y are scaled: touching Z would move the marker within Xaero's depth spacing.
+        float scale = WaypointMapReader.scale();
+        if (scale != 1.0f) {
+            pose.scale(scale, scale, 1.0f);
+        }
 
         int radius = WaypointMapReader.MARKER_RADIUS;
         if (hovered) {

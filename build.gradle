@@ -47,6 +47,20 @@ dependencies {
 	compileOnly "xaero.map:xaeroworldmap-fabric-${project.minecraft_version}:1.45.0"
 }
 
+// Dev-only design workbench: `./gradlew runClient -PwpPreview=list|edit|new` boots the client at a
+// fixed window size and auto-opens that waypoint screen with demo data (see tools/preview.sh,
+// which grabs a frame off an Xvfb display so the GUI can be iterated on headlessly).
+loom {
+	runs {
+		client {
+			programArgs '--width', '1280', '--height', '720'
+			if (project.hasProperty('wpPreview')) {
+				vmArg "-Dwaypoints.preview=${project.property('wpPreview')}"
+			}
+		}
+	}
+}
+
 processResources {
 	inputs.property 'version', project.version
 	inputs.property 'minecraft_version', project.minecraft_version

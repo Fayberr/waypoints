@@ -1,7 +1,9 @@
 package net.fayber.waypoints.compat.xaero;
 
+import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.model.Waypoint;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import xaero.map.element.render.ElementReader;
 import xaero.map.element.render.ElementRenderLocation;
 
@@ -20,12 +22,29 @@ import xaero.map.element.render.ElementRenderLocation;
  * only the dot, so hovering a label does not steal the hover from a marker underneath it.
  */
 public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMapContext, WaypointMapRenderer> {
-    /** Radius of the outlined dot drawn at the waypoint position, in map-GUI pixels. */
+    /** Radius of the outlined dot drawn at the waypoint position, in map-GUI pixels, at scale 1. */
     static final int MARKER_RADIUS = 5;
     /** Vertical gap between the top of the dot and the bottom of the name plate. */
     static final int LABEL_GAP = 3;
     /** Padding either side of the name inside its plate. */
     static final int LABEL_PADDING = 2;
+    /** Range the marker scale is clamped to, so a bad config value cannot break the map. */
+    public static final float MIN_SCALE = 0.5f;
+    public static final float MAX_SCALE = 3.0f;
+
+    /**
+     * The configured marker size multiplier. The renderer scales its pose by this and every box
+     * below is multiplied by it, so the dot, the plate, the cull box and the hover box all stay in
+     * step.
+     */
+    static float scale() {
+        return Mth.clamp(ConfigManager.get().xaeroMarkerScale, MIN_SCALE, MAX_SCALE);
+    }
+
+    /** Rounds a scaled length outwards, so a box never ends up smaller than what is drawn in it. */
+    private static int scaled(float length) {
+        return (int) Math.ceil(length * scale());
+    }
 
     @Override
     public boolean isHidden(Waypoint waypoint, WaypointMapContext context) {
@@ -60,22 +79,22 @@ public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMap
 
     @Override
     public int getInteractionBoxLeft(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return -MARKER_RADIUS - 1;
+        return -scaled(MARKER_RADIUS + 1);
     }
 
     @Override
     public int getInteractionBoxRight(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return MARKER_RADIUS + 1;
+        return scaled(MARKER_RADIUS + 1);
     }
 
     @Override
     public int getInteractionBoxTop(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return -MARKER_RADIUS - 1;
+        return -scaled(MARKER_RADIUS + 1);
     }
 
     @Override
     public int getInteractionBoxBottom(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return MARKER_RADIUS + 1;
+        return scaled(MARKER_RADIUS + 1);
     }
 
     @Override
@@ -90,17 +109,17 @@ public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMap
 
     @Override
     public int getRenderBoxTop(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return -(MARKER_RADIUS + LABEL_GAP + lineHeight() + 2);
+        return -scaled(MARKER_RADIUS + LABEL_GAP + lineHeight() + 2);
     }
 
     @Override
     public int getRenderBoxBottom(Waypoint waypoint, WaypointMapContext context, float partialTicks) {
-        return MARKER_RADIUS + 1;
+        return scaled(MARKER_RADIUS + 1);
     }
 
     @Override
     public int getLeftSideLength(Waypoint waypoint, Minecraft minecraft) {
-        return MARKER_RADIUS + 4 + minecraft.font.width(waypoint.getName());
+        return scaled(MARKER_RADIUS + 4 + minecraft.font.width(waypoint.getName()));
     }
 
     @Override
@@ -137,10 +156,10 @@ public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMap
     static int halfPlateWidth(Waypoint waypoint) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.font == null || !waypoint.isShowLabel()) {
-            return MARKER_RADIUS + 1;
+            return scaled(MARKER_RADIUS + 1);
         }
         int half = minecraft.font.width(waypoint.getName()) / 2 + LABEL_PADDING + 1;
-        return Math.max(MARKER_RADIUS + 1, half);
+        return scaled(Math.max(MARKER_RADIUS + 1, half));
     }
 
     private static int lineHeight() {
