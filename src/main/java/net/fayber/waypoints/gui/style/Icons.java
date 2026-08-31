@@ -76,7 +76,11 @@ public final class Icons {
         int v = (index / COLS) * CELL;
         gfx.pose().pushMatrix();
         gfx.pose().scale(1.0f / s, 1.0f / s);
-        gfx.blit(RenderPipelines.GUI_TEXTURED, ATLAS_TEXTURE, x0, y0, u, v, px, px, ATLAS_W, ATLAS_H, color);
+        // The long blit overload separates destination size from source texels: the full CELLxCELL
+        // cell is sampled into a px-px quad. (The short overload samples w x h texels, which would
+        // magnify one corner of the cell.)
+        gfx.blit(RenderPipelines.GUI_TEXTURED, ATLAS_TEXTURE, x0, y0, u, v,
+                px, px, CELL, CELL, ATLAS_W, ATLAS_H, color);
         gfx.pose().popMatrix();
     }
 
