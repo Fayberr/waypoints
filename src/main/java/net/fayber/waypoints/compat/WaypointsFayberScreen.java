@@ -32,7 +32,7 @@ public final class WaypointsFayberScreen {
                 .tooltip("Show pointer arrows at screen edges for off-screen waypoints.")
                 .cycle("Hide Teleport Button", () -> c.teleportButtonVisibility, v -> c.teleportButtonVisibility = v,
                         TeleportButtonVisibility.values(), v -> v.label)
-                .tooltip("When to hide the teleport button on waypoint cards. \"Without Operator\" keeps it everywhere except servers where you are not an operator.")
+                .tooltip("When to hide the teleport button on waypoint cards. \"Without Cheats or Operator\" shows it only in single player with cheats on, or on servers where you are an operator.")
 
                 .category("Beam")
                 .bool("Enable Beacon Beam", () -> c.beaconBeamEnabled, v -> c.beaconBeamEnabled = v)

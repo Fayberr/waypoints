@@ -18,7 +18,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -144,10 +143,20 @@ public class WaypointScreen extends Screen {
     /** Whether the config allows the teleport button in the current world and with these rights. */
     private boolean teleportVisible() {
         TeleportButtonVisibility mode = ConfigManager.get().teleportButtonVisibility;
-        // "Operator" = the server would let this player run the teleport command itself.
-        boolean hasPermission = this.minecraft.player != null && this.minecraft.player.permissions()
-                .hasPermission(Permissions.COMMANDS_GAMEMASTER);
-        return mode.shows(this.minecraft.hasSingleplayerServer(), hasPermission);
+        return mode.shows(this.minecraft.hasSingleplayerServer(), this.canTeleport());
+    }
+
+    /**
+     * True when the server actually grants the teleport command. The command tree the server
+     * syncs only contains the commands it allows this player to use (operator on servers, cheats
+     * in singleplayer). The client-side permission set is no use for this: only the integrated
+     * server ever populates it, and no packet syncs permissions on remote servers.
+     */
+    private boolean canTeleport() {
+        if (this.minecraft.player == null || this.minecraft.player.connection == null) {
+            return false;
+        }
+        return this.minecraft.player.connection.getCommands().getRoot().getChild("tp") != null;
     }
 
     private void createHere() {
