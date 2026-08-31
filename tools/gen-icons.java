@@ -70,7 +70,10 @@ public class GenIcons {
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(2f * SCALE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        // Stroke width is in user-space units and the transform below scales by SCALE, so this is
+        // Lucide's stroke-width 2 = 2*SCALE device pixels. (Multiplying by SCALE here as well made
+        // strokes 3x too thick, overflowing the 24-unit box and bleeding into adjacent cells.)
+        g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         for (int i = 0; i < ICONS.length; i++) {
             g.translate((i % COLS) * CELL, (i / COLS) * CELL);
