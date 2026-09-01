@@ -68,8 +68,6 @@ public class ColorPicker extends AbstractWidget {
         return this;
     }
 
-    // ------------------------------------------------------------------ model
-
     /** The picked colour, always fully opaque. */
     public int getColor() {
         return 0xFF000000 | (Mth.hsvToRgb(this.hue, this.saturation, this.value) & 0x00FFFFFF);
@@ -104,8 +102,6 @@ public class ColorPicker extends AbstractWidget {
         }
     }
 
-    // ------------------------------------------------------------------ layout
-
     private int squareSize() {
         return Math.min(this.getHeight(), this.getWidth() - HUE_WIDTH - GAP);
     }
@@ -113,8 +109,6 @@ public class ColorPicker extends AbstractWidget {
     private int hueX() {
         return this.getX() + this.squareSize() + GAP;
     }
-
-    // ------------------------------------------------------------------ input
 
     @Override
     public void onClick(MouseButtonEvent event, boolean doubled) {
@@ -149,8 +143,6 @@ public class ColorPicker extends AbstractWidget {
         }
         this.onChange.run();
     }
-
-    // ------------------------------------------------------------------ drawing
 
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor gfx, int mouseX, int mouseY, float partialTick) {

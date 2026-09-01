@@ -101,16 +101,15 @@ public class WaypointRenderer {
             poseStack.pushPose();
             poseStack.translate(dx, dy, dz);
 
-            // 1. Sleek glowing vertical beacon beam (bucket 0).
+            // Beacon beam (bucket 0).
             BeamRenderer.renderBeam(poseStack, collector, wp, config);
 
-            // 2. Faint depth-writing card underlay (bucket 0, invisible; only writes depth).
-            //    Underlay-vs-underlay needs no sorting: they depth-test against each other and
-            //    the nearer card's plane wins the depth buffer either way.
+            // Depth-writing card underlay (bucket 0, invisible). Underlay-vs-underlay needs no
+            // sorting: they depth-test against each other and the nearer plane wins regardless.
             PinRenderer.renderUnderlay(poseStack, collector, camera, wp, config, dist);
 
-            // 3+4. Card body and text, each waypoint in its own bucket pair (2i+1 / 2i+2) so a
-            //     nearer waypoint's card and text draw over a farther waypoint's card and text.
+            // Card body and text, each waypoint in its own bucket pair (2i+1 / 2i+2) so a nearer
+            // waypoint's card and text draw over a farther one's.
             if (storage != null) {
                 int cappedSlot = Math.min(slot, MAX_CARD_SLOTS - 1);
                 OrderedSubmitNodeCollector bodyCollector = storage.order(2 * cappedSlot + 1);

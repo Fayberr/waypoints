@@ -57,8 +57,6 @@ public final class Ui {
     private Ui() {
     }
 
-    // ---------------------------------------------------------------- text
-
     private static Style style(boolean bold) {
         int i = Math.clamp(Math.round(scale()), 1, MAX_SCALE);
         return bold ? STYLES_BOLD[i] : STYLES[i];
@@ -127,8 +125,6 @@ public final class Ui {
         }
         return Component.literal(sb + "...").setStyle(style);
     }
-
-    // ------------------------------------------------------------- shapes
 
     /** Physical pixels per GUI pixel. */
     public static float scale() {
@@ -206,8 +202,6 @@ public final class Ui {
             roundRect(gfx, x - grow, y - grow, w + grow * 2.0f, h + grow * 2.0f, radius + grow, alpha << 24);
         }
     }
-
-    // --------------------------------------------------------------- internals
 
     /** Rounded rectangle in physical pixels; assumes the caller already scaled the matrix. */
     private static void roundRectDevice(GuiGraphicsExtractor gfx, int x, int y, int w, int h, int r, int color) {

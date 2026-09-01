@@ -143,8 +143,6 @@ public class PinRenderer {
         applyCardTransform(poseStack, camera, config, dist);
         collector.submitCustomGeometry(poseStack, cardType, (pose, consumer) -> {
             Matrix4f mat = pose.pose();
-            // Lighter border rounded-rect first, then the near-black fill inset by 1px on top
-            // of it, leaving a 1px border ring visible.
             emitCard(mat, consumer, layout.cardLeft(), layout.cardRight(), BORDER_A, FILL_A);
         });
         poseStack.popPose();

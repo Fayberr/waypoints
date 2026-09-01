@@ -107,7 +107,7 @@ public class WaypointEditScreen extends Screen {
         int total = fixed + pickerHeight + footerSpace;
         int y = Math.max(topMargin, (this.height - total) / 2);
 
-        // Name -----------------------------------------------------------------
+        // Name
         y += this.labelHeight;
         this.nameBox = new StyledEditBox(this.font, this.contentX, y, this.contentW, this.fieldHeight,
                 Component.literal("Name"));
@@ -117,14 +117,14 @@ public class WaypointEditScreen extends Screen {
         this.addRenderableWidget(this.nameBox);
         y += this.fieldHeight + this.sectionGap + this.labelHeight;
 
-        // Position -------------------------------------------------------------
+        // Position
         int coordW = (this.contentW - 2 * GAP) / 3;
         this.xBox = this.coordinateBox(this.contentX, y, coordW, "X", this.waypoint.getX());
         this.yBox = this.coordinateBox(this.contentX + coordW + GAP, y, coordW, "Y", this.waypoint.getY());
         this.zBox = this.coordinateBox(this.contentX + this.contentW - coordW, y, coordW, "Z", this.waypoint.getZ());
         y += this.fieldHeight + this.sectionGap;
 
-        // Toggles: two cards side by side, each its own card --------------------
+        // Toggles: two cards side by side, each its own card
         int toggleW = (this.contentW - GAP) / 2;
         this.addRenderableWidget(new ToggleCard(this.contentX, y, toggleW, this.fieldHeight,
                 Ui.ui("Beacon beam"), () -> this.beamEnabled, v -> this.beamEnabled = v));
@@ -132,7 +132,7 @@ public class WaypointEditScreen extends Screen {
                 Ui.ui("Rainbow"), () -> this.chroma, this::setChroma));
         y += this.fieldHeight + this.sectionGap + this.labelHeight;
 
-        // Colour ---------------------------------------------------------------
+        // Colour
         this.colourY = y;
         int pickerWidth = this.contentW - SIDE_WIDTH - GAP;
         this.picker = new ColorPicker(this.contentX, y, pickerWidth, pickerHeight, this.selectedColor);
@@ -163,7 +163,7 @@ public class WaypointEditScreen extends Screen {
 
         y += pickerHeight + this.sectionGap;
 
-        // Footer ---------------------------------------------------------------
+        // Footer
         this.footerY = y;
         int buttonW = (this.contentW - GAP) / 2;
         this.addRenderableWidget(new CardButton(this.contentX, y, buttonW, this.buttonHeight,
@@ -180,8 +180,6 @@ public class WaypointEditScreen extends Screen {
         this.addRenderableWidget(box);
         return box;
     }
-
-    // ------------------------------------------------------------------ colour
 
     /** Writes the current colour into the hex field without re-entering the responder. */
     private void syncHexField() {
@@ -223,8 +221,6 @@ public class WaypointEditScreen extends Screen {
         }
     }
 
-    // ------------------------------------------------------------------ saving
-
     private void saveAndClose() {
         Double px = parseOrNull(this.xBox.getValue());
         Double py = parseOrNull(this.yBox.getValue());
@@ -259,8 +255,6 @@ public class WaypointEditScreen extends Screen {
             return null;
         }
     }
-
-    // ------------------------------------------------------------------ drawing
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor gfx, int mouseX, int mouseY, float partialTick) {
