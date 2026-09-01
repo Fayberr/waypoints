@@ -36,10 +36,10 @@ Client-side waypoints, without a map suite. A waypoint is a floating pin with a 
 
 - An in-game manager screen with search, quick visibility toggles, editing and deletion.
 - Two keybinds: open the manager and quick-add a waypoint at your position.
-- Config screen through Fayber Config or Cloth Config, whichever is installed.
+- Config screen through Modern Config or Cloth Config, whichever is installed.
 - Waypoints appear on Xaero's World Map when that mod is installed.
 
 ## Notes
 
 - Client-side only: install on the client, join any server.
-- Optional integrations: ModMenu, Xaero's World Map, and Fayber Config or Cloth Config for settings.
+- Optional integrations: ModMenu, Xaero's World Map, and Modern Config or Cloth Config for settings.
