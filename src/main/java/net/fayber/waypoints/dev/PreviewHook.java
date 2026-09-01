@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Design workbench, ported from Fayber Config. Seeds a handful of demo waypoints and opens one of
+ * Design workbench, ported from Modern Config. Seeds a handful of demo waypoints and opens one of
  * the waypoint screens shortly after the dev client reaches the title screen, so the look can be
  * iterated on without a monitor: run the client under Xvfb, grab a frame, inspect, repeat (see
  * {@code tools/preview.sh}).

@@ -15,7 +15,7 @@ repositories {
 	maven { name = 'Terraformers'; url = 'https://maven.terraformersmc.com/' }
 	// Shedaniel maven for Cloth Config.
 	maven { name = 'Shedaniel'; url = 'https://maven.shedaniel.me/' }
-	// Fayber Config is published to the local maven repo by its own `publishToMavenLocal`.
+	// Modern Config is published to the local maven repo by its own `publishToMavenLocal`.
 	mavenLocal()
 	// Xaero's maven, for the World Map integration (compileOnly, never shipped: All Rights Reserved).
 	maven {
@@ -36,10 +36,10 @@ dependencies {
 	compileOnly "com.terraformersmc:modmenu:18.0.0"
 	compileOnly "me.shedaniel.cloth:cloth-config-fabric:26.1.154"
 
-	// Fayber Config (optional, compileOnly; preferred over Cloth when installed at runtime).
+	// Modern Config (optional, compileOnly; preferred over Cloth when installed at runtime).
 	// runtimeOnly pulls it into the dev client too, so the dev boot exercises the integration.
-	compileOnly "net.fayber:fayber-config:1.1.0"
-	runtimeOnly "net.fayber:fayber-config:1.1.0"
+	compileOnly "net.fayber:modern-config:1.7.1"
+	runtimeOnly "net.fayber:modern-config:1.7.1"
 
 	// Xaero's World Map (optional, compileOnly): our waypoints are registered as map elements
 	// through its public element framework. Never a runtime dependency, never shipped

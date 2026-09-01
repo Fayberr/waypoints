@@ -1,7 +1,7 @@
 package net.fayber.waypoints.compat;
 
-import net.fayber.fayberconfig.api.ConfigEntry;
-import net.fayber.fayberconfig.api.FayberConfigScreen;
+import net.fayber.modernconfig.api.ConfigEntry;
+import net.fayber.modernconfig.api.ModernConfigScreen;
 import net.fayber.waypoints.config.ConfigManager;
 import net.fayber.waypoints.config.ModConfig;
 import net.fayber.waypoints.config.TeleportButtonVisibility;
@@ -9,19 +9,19 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Fayber Config binding for {@link ModConfig}: all fields across five categories, live
+ * Modern Config binding for {@link ModConfig}: all fields across five categories, live
  * preview while the screen is open, Cancel reverts, Save persists via ConfigManager.
  *
  * <p>This class is only referenced from {@link ConfigScreenRouter} after
- * {@code FabricLoader.isModLoaded("fayberconfig")} passed, so its fayberconfig imports are only
- * classloaded when the mod is actually installed (fayberconfig is a compileOnly dependency).
+ * {@code FabricLoader.isModLoaded("modernconfig")} passed, so its modernconfig imports are only
+ * classloaded when the mod is actually installed (modernconfig is a compileOnly dependency).
  */
-public final class WaypointsFayberScreen {
-    private WaypointsFayberScreen() {}
+public final class WaypointsModernScreen {
+    private WaypointsModernScreen() {}
 
     public static Screen create(Screen parent) {
         ModConfig c = ConfigManager.get();
-        return FayberConfigScreen.builder(Component.literal("Modern Waypoints Settings"), parent, ConfigManager::save)
+        return ModernConfigScreen.builder(Component.literal("Modern Waypoints Settings"), parent, ConfigManager::save)
 
                 .category("General")
                 .intSlider("Max Render Distance", () -> c.renderDistance, v -> c.renderDistance = v, 0, 50000, 100)

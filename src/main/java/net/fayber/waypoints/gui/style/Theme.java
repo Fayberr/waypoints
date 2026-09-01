@@ -7,8 +7,8 @@ package net.fayber.waypoints.gui.style;
  * near-white "confirm" button), so the only real colour on the screens is the waypoints'
  * own colours and the colour picker.
  *
- * <p>Mirrors {@code net.fayber.fayberconfig.gui.GuiUtil} on purpose, but duplicated rather than
- * imported: Fayber Config is an optional (compileOnly) dependency and these screens are core.
+ * <p>Mirrors {@code net.fayber.modernconfig.gui.GuiUtil} on purpose, but duplicated rather than
+ * imported: Modern Config is an optional (compileOnly) dependency and these screens are core.
  */
 public final class Theme {
     private Theme() {

@@ -12,7 +12,7 @@ import net.minecraft.resources.Identifier;
 
 /**
  * The drawing layer that makes the waypoint screens look like a modern app instead of a Minecraft
- * screen. Same technique Fayber Config uses, kept local so these screens still render when that
+ * screen. Same technique Modern Config uses, kept local so these screens still render when that
  * (optional) library is not installed.
  *
  * <p>Two things cause the vanilla "blocky" look, and this class fixes both:
@@ -28,14 +28,14 @@ import net.minecraft.resources.Identifier;
  */
 public final class Ui {
     /**
-     * Fayber Config bundles Inter at one rasterisation per GUI scale (a TTF glyph is rasterised at
+     * Modern Config bundles Inter at one rasterisation per GUI scale (a TTF glyph is rasterised at
      * {@code size * oversample} texels and sampled NEAREST, so any ratio other than one texel per
      * physical pixel makes text subtly jagged). When that mod is present we borrow those fonts by
      * resource id only, so the two screens share a typeface; otherwise we fall back to the vanilla
      * font. This is an asset reference, never a class reference, so nothing here can fail to load.
      */
-    private static final boolean FAYBER_FONTS =
-            FabricLoader.getInstance().isModLoaded("fayberconfig");
+    private static final boolean MODERN_FONTS =
+            FabricLoader.getInstance().isModLoaded("modernconfig");
     private static final int MAX_SCALE = 6;
 
     private static final Style[] STYLES = new Style[MAX_SCALE + 1];
@@ -43,13 +43,13 @@ public final class Ui {
 
     static {
         for (int i = 1; i <= MAX_SCALE; i++) {
-            STYLES[i] = FAYBER_FONTS
+            STYLES[i] = MODERN_FONTS
                     ? Style.EMPTY.withFont(new FontDescription.Resource(
-                            Identifier.fromNamespaceAndPath("fayberconfig", "ui_x" + i)))
+                            Identifier.fromNamespaceAndPath("modernconfig", "ui_x" + i)))
                     : Style.EMPTY;
-            STYLES_BOLD[i] = FAYBER_FONTS
+            STYLES_BOLD[i] = MODERN_FONTS
                     ? Style.EMPTY.withFont(new FontDescription.Resource(
-                            Identifier.fromNamespaceAndPath("fayberconfig", "ui_bold_x" + i)))
+                            Identifier.fromNamespaceAndPath("modernconfig", "ui_bold_x" + i)))
                     : Style.EMPTY.withBold(true);
         }
     }

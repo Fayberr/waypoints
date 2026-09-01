@@ -6,7 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Which settings screen opens: fayberconfig if installed, else Cloth Config, else nothing.
+ * Which settings screen opens: modernconfig if installed, else Cloth Config, else nothing.
  * Used by both the ModMenu entrypoint and the Settings button in WaypointScreen.
  *
  * <p>Each screen class is only referenced after its isModLoaded check, so none of the
@@ -17,8 +17,8 @@ public final class ConfigScreenRouter {
 
     @Nullable
     public static Screen create(Screen parent) {
-        if (FabricLoader.getInstance().isModLoaded("fayberconfig")) {
-            return WaypointsFayberScreen.create(parent);
+        if (FabricLoader.getInstance().isModLoaded("modernconfig")) {
+            return WaypointsModernScreen.create(parent);
         }
         if (FabricLoader.getInstance().isModLoaded("cloth-config")) {
             return WaypointsClothScreen.create(parent);

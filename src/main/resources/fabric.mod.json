@@ -33,7 +33,7 @@
 	"suggests": {
 		"modmenu": "*",
 		"cloth-config": "*",
-		"fayberconfig": "*",
+		"modernconfig": "*",
 		"xaeroworldmap": "*"
 	},
 	"credits": "UI icons from Lucide (lucide.dev, ISC license)"
