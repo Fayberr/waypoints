@@ -10,10 +10,9 @@ import java.util.List;
 /**
  * Feeds our waypoints to Xaero's World Map one element at a time.
  *
- * <p>{@code begin} takes a snapshot of the store for the dimension currently on screen rather than
- * iterating the live list: {@link WaypointStore} is mutated from the client tick thread (death
- * waypoints, the edit screen) while this iterates on the render thread, and
- * {@code getVisibleForDimension} already returns a fresh list under the store's lock.
+ * <p>{@code begin} snapshots the store for the dimension on screen instead of iterating the live
+ * list: the store is mutated from the client tick thread while this iterates on the render thread,
+ * and {@code getVisibleForDimension} already returns a fresh list under the store's lock.
  */
 public final class WaypointMapProvider extends ElementRenderProvider<Waypoint, WaypointMapContext> {
     private List<Waypoint> snapshot = List.of();

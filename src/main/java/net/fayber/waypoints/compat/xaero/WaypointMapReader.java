@@ -10,16 +10,14 @@ import xaero.map.element.render.ElementRenderLocation;
 /**
  * Tells Xaero's World Map where each waypoint sits and how much room its marker needs.
  *
- * <p>Coordinates: {@code getRenderX/Y/Z} are world block coordinates. The framework turns them
- * into screen space itself ({@code (renderX / dimDiv - cameraX) * zoom}), so nothing here knows
- * about panning or zoom. {@link WaypointMapRenderer#shouldBeDimScaled()} is false and the provider
- * only ever yields waypoints belonging to the dimension currently on screen, so {@code dimDiv} is
- * 1 and the raw coordinates are already correct.
+ * <p>{@code getRenderX/Y/Z} are world block coordinates; the framework turns them into screen
+ * space itself. {@link WaypointMapRenderer#shouldBeDimScaled()} is false and the provider only
+ * yields waypoints from the dimension on screen, so no dimension scaling applies here.
  *
  * <p>Box coordinates are element-local pixels around the marker origin (negative is left/up),
- * exactly like Xaero's own readers. The render box is the cull box (it must cover the label, or
- * markers pop out early when scrolled to the screen edge); the interaction box is deliberately
- * only the dot, so hovering a label does not steal the hover from a marker underneath it.
+ * like Xaero's own readers. The render box is the cull box (it must cover the label, or markers
+ * pop out early when scrolled to the screen edge); the interaction box is only the dot, so
+ * hovering a label does not steal the hover from a marker underneath it.
  */
 public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMapContext, WaypointMapRenderer> {
     /** Radius of the outlined dot drawn at the waypoint position, in map-GUI pixels, at scale 1. */
@@ -34,8 +32,7 @@ public final class WaypointMapReader extends ElementReader<Waypoint, WaypointMap
 
     /**
      * The configured marker size multiplier. The renderer scales its pose by this and every box
-     * below is multiplied by it, so the dot, the plate, the cull box and the hover box all stay in
-     * step.
+     * below is multiplied by it, so dot, plate, cull box and hover box stay in step.
      */
     static float scale() {
         return Mth.clamp(ConfigManager.get().xaeroMarkerScale, MIN_SCALE, MAX_SCALE);

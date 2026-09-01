@@ -1,17 +1,14 @@
 package net.fayber.waypoints.gui.style;
 
 /**
- * The waypoint screens' palette: one neutral dark ramp and nothing else.
+ * The waypoint screens' palette: one neutral dark ramp, nothing else.
  *
- * <p>Every surface grey has equal R/G/B, so no part of the chrome reads as tinted. There is
- * deliberately <b>no accent colour</b>: emphasis is carried by lightness alone (a brighter card, a
- * near-white "confirm" button), which keeps the screens quiet and lets the only real colour on
- * them be the waypoints' own colours and the colour picker.
+ * <p>No accent colour on purpose. Emphasis is carried by lightness alone (a brighter card, a
+ * near-white "confirm" button), so the only real colour on the screens is the waypoints'
+ * own colours and the colour picker.
  *
- * <p>This mirrors {@code net.fayber.fayberconfig.gui.GuiUtil} on purpose, so the waypoint list and
- * the settings screen look like one product. It is duplicated rather than imported because Fayber
- * Config is an optional (compileOnly) dependency and these screens are core: they have to render
- * with the library absent.
+ * <p>Mirrors {@code net.fayber.fayberconfig.gui.GuiUtil} on purpose, but duplicated rather than
+ * imported: Fayber Config is an optional (compileOnly) dependency and these screens are core.
  */
 public final class Theme {
     private Theme() {

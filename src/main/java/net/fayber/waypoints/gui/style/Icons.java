@@ -17,11 +17,9 @@ import java.io.InputStream;
  * The UI glyphs, as sprites from a pre-rendered atlas ({@code textures/gui/icons.png}, generated
  * by {@code tools/gen-icons.java} from the Lucide icon set, ISC license, see NOTICE).
  *
- * <p>This replaced drawing glyphs from Ui primitives each frame, which alias badly: strokes are
- * re-rasterised at whatever odd size a button happens to be, so curves come out lumpy and round
- * joints develop slivers. The atlas instead holds each icon rasterised once at high resolution
- * with real anti-aliasing, and drawing it is a bilinear-filtered tinted quad, which stays smooth
- * at every GUI scale and every button size, the way a UI toolkit does it.
+ * <p>Replaced drawing glyphs from Ui primitives each frame, which aliased badly at odd button
+ * sizes. Each icon is rasterised once at high resolution with real anti-aliasing, and drawing it
+ * is a bilinear-filtered tinted quad, which stays smooth at every GUI scale.
  *
  * <p>The atlas texture registers itself with a {@code LINEAR} sampler: {@link DynamicTexture}
  * hard-codes the blocky {@code NEAREST} one, and in this rendering stack filtering is a property
@@ -33,10 +31,8 @@ public final class Icons {
     private static final int COLS = 4;
     private static final int ATLAS_W = CELL * COLS;
     private static final int ATLAS_H = CELL * 2;
-    /** Where the PNG lives in resources. */
     private static final Identifier ATLAS_ASSET =
             Identifier.fromNamespaceAndPath("waypoints", "textures/gui/icons.png");
-    /** The registered texture name used when blitting. */
     private static final Identifier ATLAS_TEXTURE =
             Identifier.fromNamespaceAndPath("waypoints", "gui/icons");
 
@@ -77,8 +73,8 @@ public final class Icons {
         gfx.pose().pushMatrix();
         gfx.pose().scale(1.0f / s, 1.0f / s);
         // The long blit overload separates destination size from source texels: the full CELLxCELL
-        // cell is sampled into a px-px quad. (The short overload samples w x h texels, which would
-        // magnify one corner of the cell.)
+        // cell is sampled into a px-px quad. The short overload samples w x h texels, which would
+        // magnify one corner of the cell.
         gfx.blit(RenderPipelines.GUI_TEXTURED, ATLAS_TEXTURE, x0, y0, u, v,
                 px, px, CELL, CELL, ATLAS_W, ATLAS_H, color);
         gfx.pose().popMatrix();

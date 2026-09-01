@@ -3,7 +3,7 @@
 	"id": "waypoints",
 	"version": "${version}",
 	"name": "Modern Waypoints",
-	"description": "Clean, modern client-side waypoints with floating pins, sleek vertical beacon beams, dynamic distance, multi-world isolation, and death waypoints.",
+	"description": "Client-side waypoints with floating pins, vertical beams, distance labels, death waypoints and an in-game manager.",
 	"authors": [
 		"Fayber"
 	],

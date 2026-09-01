@@ -23,16 +23,15 @@ import java.util.List;
  * beam geometry and the three card pieces into submit-order buckets:
  *
  * - bucket 0 (default collector): beam + glow + every card's depth-writing underlay
- * - bucket 2i+1: the visible card fill/border of the i-th FARTHEST visible waypoint
+ * - bucket 2i+1: the visible card fill/border of the i-th farthest visible waypoint
  * - bucket 2i+2: that waypoint's name/distance text
  *
  * The translucent feature stage draws buckets in ascending order, so the beam glow can never
  * blend over a card and the glyphs always draw on top of their own fill. The per-waypoint
  * allocation is the occlusion mechanism: the see-through card and text do no depth testing
  * (that is what makes them render through walls), so the only way a nearer waypoint can fully
- * cover a farther one, TEXT INCLUDED, is painter's order. Waypoints are therefore sorted far
- * to near and each gets its own bucket pair; see PinRenderer's class doc for the exact
- * ordering guarantees and the version-specific mechanics.
+ * cover a farther one, text included, is painter's order. Hence the far-to-near sort and one
+ * bucket pair per waypoint; see PinRenderer's class doc for the details.
  */
 public class WaypointRenderer {
 
@@ -111,7 +110,7 @@ public class WaypointRenderer {
             PinRenderer.renderUnderlay(poseStack, collector, camera, wp, config, dist);
 
             // 3+4. Card body and text, each waypoint in its own bucket pair (2i+1 / 2i+2) so a
-            //     nearer waypoint's card and text draw over a farther waypoint's card AND text.
+            //     nearer waypoint's card and text draw over a farther waypoint's card and text.
             if (storage != null) {
                 int cappedSlot = Math.min(slot, MAX_CARD_SLOTS - 1);
                 OrderedSubmitNodeCollector bodyCollector = storage.order(2 * cappedSlot + 1);

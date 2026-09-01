@@ -11,17 +11,17 @@ Voice: short, concrete, no config-key dumps, no "and more". No em-dashes.
 
 ## description (short summary line)
 
-Clean, modern client-side waypoints: floating pins, vertical beams, distance labels, death waypoints and an in-game manager.
+Client-side waypoints with floating pins, vertical beams, distance labels, death waypoints and an in-game manager.
 
 ## body (full page)
 
 # Modern Waypoints
 
-Client-side waypoints with a clean, modern look, without a map suite. A waypoint is a floating pin with a vertical beam and a live distance label. Works on vanilla servers, modded servers, Realms and singleplayer, because everything except the rendering is client-side.
+Client-side waypoints, without a map suite. A waypoint is a floating pin with a vertical beam and a live distance label. Works on vanilla servers, modded servers, Realms and singleplayer, because everything except the rendering is client-side.
 
 ## Waypoints
 
-- Floating pins with dynamic scale compensation and translucent vertical beams with configurable opacity and fading.
+- Floating pins that keep a sensible size at any distance, and translucent vertical beams with configurable opacity and fading.
 - Distance labels that scale with camera distance and stay readable up close.
 - Labels render through walls, and nearer labels always cover farther ones.
 - Per-waypoint color with preset swatches, hex input and chroma mode.

@@ -12,20 +12,19 @@ import net.minecraft.resources.Identifier;
 
 /**
  * The drawing layer that makes the waypoint screens look like a modern app instead of a Minecraft
- * screen. It is the same technique Fayber Config uses, kept local so these screens still render
- * when that (optional) library is not installed.
+ * screen. Same technique Fayber Config uses, kept local so these screens still render when that
+ * (optional) library is not installed.
  *
  * <p>Two things cause the vanilla "blocky" look, and this class fixes both:
  *
- * <ol>
- *   <li><b>The GUI-scale grid.</b> Everything vanilla draws is snapped to GUI pixels, so at GUI
- *       scale 3 a one-pixel border is three screen pixels thick and a rounded corner is a visible
- *       staircase. Every primitive here takes float coordinates in GUI space but draws with the
- *       matrix stack scaled to <em>physical</em> screen pixels, so shapes get the full resolution
- *       of the monitor. Layout and mouse hit-testing stay in GUI space, so widgets are unaffected.
- *   <li><b>Hard-edged corners.</b> Corners go through {@link WaypointPipelines#roundCorner()},
- *       whose shader computes circular coverage and anti-aliases it per pixel.
- * </ol>
+ * <p>The GUI-scale grid: everything vanilla draws is snapped to GUI pixels, so at GUI scale 3 a
+ * one-pixel border is three screen pixels thick and a rounded corner is a visible staircase. Every
+ * primitive here takes float coordinates in GUI space but draws with the matrix stack scaled to
+ * physical screen pixels. Layout and mouse hit-testing stay in GUI space, so widgets are
+ * unaffected.
+ *
+ * <p>Hard-edged corners: corners go through {@link WaypointPipelines#roundCorner()}, whose shader
+ * computes circular coverage and anti-aliases it per pixel.
  */
 public final class Ui {
     /**

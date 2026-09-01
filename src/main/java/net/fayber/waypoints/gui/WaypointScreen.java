@@ -15,7 +15,6 @@ import net.fayber.waypoints.model.WaypointColor;
 import net.fayber.waypoints.model.WaypointStore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;

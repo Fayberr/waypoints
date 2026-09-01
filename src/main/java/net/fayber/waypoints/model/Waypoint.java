@@ -40,8 +40,7 @@ public class Waypoint {
 
     /**
      * Snaps X/Z to the centre of the containing block (floor + 0.5) so the beam, dot and label
-     * are visually centered on the block instead of wherever the player's eye was when the
-     * waypoint was created (or a hand-typed fractional coordinate). Y is intentionally left
+     * are visually centered on the block instead of wherever the player's eye was. Y is left
      * alone: render anchors are derived from it by floor() at draw time.
      */
     public void snapToBlockCenter() {
@@ -93,16 +92,8 @@ public class Waypoint {
         this.dimension = dimension;
     }
 
-    public int getColorArgb() {
-        return colorArgb;
-    }
-
     public int getColor() {
         return colorArgb;
-    }
-
-    public void setColorArgb(int colorArgb) {
-        this.colorArgb = colorArgb;
     }
 
     public void setColor(int color) {
@@ -129,16 +120,8 @@ public class Waypoint {
         this.visible = visible;
     }
 
-    public boolean isShowBeam() {
-        return showBeam;
-    }
-
     public boolean isBeaconBeam() {
         return showBeam;
-    }
-
-    public void setShowBeam(boolean showBeam) {
-        this.showBeam = showBeam;
     }
 
     public void setBeaconBeam(boolean beaconBeam) {

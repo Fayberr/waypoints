@@ -14,22 +14,16 @@ import net.minecraft.util.Mth;
  * A full HSV colour picker: a saturation/value square with a vertical hue bar beside it, so a
  * waypoint can be any colour instead of one of a handful of presets.
  *
- * <p><b>Why the square is drawn as gradient columns.</b> The GUI can only fill rectangles and
- * vertical gradients, but the square happens to be exactly bilinear in RGB: for a fixed hue,
- * {@code hsvToRgb(h, s, v)} is linear in {@code v} (it scales the whole colour) and linear in
- * {@code s} at {@code v == 1} (it mixes white towards the pure hue). So one vertical gradient per
- * column, from {@code hsv(h, s, 1)} down to black, reproduces the square exactly. The columns are
- * one <em>physical</em> pixel wide (the matrix is scaled by 1/guiScale, the same trick
- * {@link Ui} uses), so the ramp is smooth on the monitor rather than banded on the GUI grid.
+ * <p>The square is drawn as one vertical gradient per column because it happens to be exactly
+ * bilinear in RGB: for a fixed hue, {@code hsvToRgb(h, s, v)} is linear in {@code v} and linear
+ * in {@code s} at {@code v == 1}. So a gradient from {@code hsv(h, s, 1)} down to black
+ * reproduces the square exactly. The columns are one physical pixel wide (matrix scaled by
+ * 1/guiScale, the same trick {@link Ui} uses), so the ramp is smooth rather than banded on the
+ * GUI grid. Rounded corners come from insetting each column/row by the corner arc, with the
+ * gradient end colours re-evaluated at the clipped fractions so the ramp stays continuous.
  *
- * <p>Both the square and the hue bar get rounded corners by insetting each column/row by the
- * corner arc, and the gradient end colours are re-evaluated at the clipped fractions so the ramp
- * stays continuous where it is cut.
- *
- * <p>{@link #setDimmed} de-emphasises the whole picker (drawn at a fraction of its brightness)
- * while keeping every interaction alive. It marks "this control is not the thing winning right
- * now" without locking it: picking a colour while dimmed is exactly how the caller ends that
- * state, so the input stays on.
+ * <p>{@link #setDimmed} de-emphasises the picker while keeping it interactive: picking a colour
+ * while dimmed is exactly how the caller ends that state.
  */
 public class ColorPicker extends AbstractWidget {
     /** Width of the hue bar and the gap between it and the square. */
@@ -236,9 +230,9 @@ public class ColorPicker extends AbstractWidget {
         Ui.circle(gfx, hx, hy, 4.0f, scaleRgb(0xFFFFFFFF, dim));
         Ui.circle(gfx, hx, hy, 2.5f, under);
 
-        // Hue handle: a slim bar straddling the whole width of the bar. It is built from two filled
-        // capsules, the inner one painted in the hue it sits on, because a transparent middle
-        // cannot be punched out of a filled shape.
+        // Hue handle: a slim bar straddling the whole width of the bar, built from two filled
+        // capsules, the inner one painted in the hue it sits on (a transparent middle cannot be
+        // punched out of a filled shape).
         float by = this.getY() + this.hue * this.getHeight();
         float bx = this.hueX() - 2.0f;
         float bw = HUE_WIDTH + 4.0f;

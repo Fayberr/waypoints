@@ -12,15 +12,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * A labelled boolean option living in its own card: label on the left, pill toggle on the right,
- * and the whole card is the click target (a 32x17 pill is a small thing to hit).
- *
- * <p>The pill is drawn here rather than nested as a child widget: a card that contains an
- * independently clickable control would need the click to be routed to one of two overlapping
- * targets, and there is nothing to gain from that when both do the same thing.
- *
- * <p>State is read through the supplier every frame, so a change from elsewhere (the hex field
- * clearing rainbow, say) shows up without the screen being rebuilt.
+ * A labelled boolean option in its own card: label on the left, pill toggle on the right, and the
+ * whole card is the click target (a 32x17 pill is a small thing to hit). State is read through the
+ * supplier every frame, so a change from elsewhere shows up without the screen being rebuilt.
  */
 public class ToggleCard extends AbstractButton {
     private static final int PAD_X = 11;

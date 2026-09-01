@@ -10,20 +10,16 @@ import org.slf4j.LoggerFactory;
 /**
  * The custom GUI render pipeline behind every rounded shape on the waypoint screens.
  *
- * <p>Vanilla's GUI can only fill axis-aligned rectangles, which is why "rounded" corners built out
- * of stacked fill bands look like staircases. This pipeline is vanilla's textured GUI pipeline with
- * one thing swapped: a fragment shader that computes circular coverage from the UVs and
- * anti-aliases it with {@code fwidth}, so corners stay smooth at any GUI scale and any radius.
+ * <p>Vanilla's GUI can only fill axis-aligned rectangles, so stacked-fill "rounded" corners look
+ * like staircases. This pipeline is vanilla's textured GUI pipeline with one thing swapped: a
+ * fragment shader that computes circular coverage from the UVs and anti-aliases it with
+ * {@code fwidth}, so corners stay smooth at any GUI scale and any radius.
  *
  * <p>Everything except the fragment shader is copied off {@link RenderPipelines#GUI_TEXTURED} at
- * runtime rather than hard-coded, so blend mode, depth state, vertex format and uniform layout
- * automatically track whatever the current Minecraft version does. Blaze3D compiles pipelines
- * lazily on first use, so no registration is needed; the shader source is loaded from this mod's
- * assets by the normal resource manager.
- *
- * <p>Construction is lazy and failure-tolerant: if anything about the vanilla pipeline changes in a
- * way this cannot mirror, {@link #roundCorner()} returns null and {@link Ui} falls back to drawing
- * corners as pixel spans. A slightly harder-edged menu is better than a crash.
+ * runtime so the pipeline tracks whatever the current Minecraft version does. Blaze3D compiles
+ * pipelines lazily, so no registration is needed. If the build fails on some version,
+ * {@link #roundCorner()} returns null and {@link Ui} falls back to drawing corners as pixel
+ * spans. A slightly harder-edged menu is better than a crash.
  */
 public final class WaypointPipelines {
     private static final Logger LOGGER = LoggerFactory.getLogger("waypoints");

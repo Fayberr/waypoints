@@ -193,7 +193,7 @@ public class WaypointEditScreen extends Screen {
         this.syncingHex = false;
     }
 
-    /** Accepts "#RRGGBB" or "RRGGBB" as it is typed; a half-typed value is simply ignored. */
+    /** Accepts "#RRGGBB" or "RRGGBB" as it is typed; a half-typed value is ignored. */
     private void onHexTyped(String text) {
         if (this.syncingHex) {
             return;

@@ -15,15 +15,14 @@ import xaero.map.graphics.renderer.multitexture.MultiTextureRenderTypeRendererPr
 /**
  * Draws our waypoints onto Xaero's World Map.
  *
- * <p>Xaero's element framework has already translated the pose to the waypoint's screen position
- * by the time {@link #renderElement} runs, so everything here is drawn in element-local pixels
- * around the origin: an outlined dot in the waypoint colour, with the name on a dark plate above
- * it. Only vanilla primitives via {@link MapElementGraphics} are used (no Xaero texture atlases,
- * no {@code MultiTextureRenderTypeRenderer}), which keeps this independent of Xaero's internal
- * render plumbing and therefore much less likely to break on their next update.
+ * <p>The framework has already translated the pose to the waypoint's screen position by the time
+ * {@link #renderElement} runs, so everything here is drawn in element-local pixels around the
+ * origin: an outlined dot in the waypoint colour, with the name on a dark plate above it. Only
+ * vanilla primitives via {@link MapElementGraphics} are used (no Xaero texture atlases, no
+ * {@code MultiTextureRenderTypeRenderer}), which keeps this independent of Xaero's internal
+ * render plumbing and less likely to break on their next update.
  *
- * <p>This class is only ever loaded when Xaero's World Map is installed: see
- * {@link XaeroWorldMapCompat}.
+ * <p>Only ever loaded when Xaero's World Map is installed: see {@link XaeroWorldMapCompat}.
  */
 public final class WaypointMapRenderer extends ElementRenderer<Waypoint, WaypointMapContext, WaypointMapRenderer> {
     /** Ring around every marker, so bright waypoint colours stay readable on bright terrain. */

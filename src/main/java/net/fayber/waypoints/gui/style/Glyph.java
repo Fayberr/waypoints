@@ -3,8 +3,8 @@ package net.fayber.waypoints.gui.style;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
- * One of the {@link Icons} sprites ({@code Icons.TRASH} and friends), so buttons can take an icon
- * as a parameter instead of each needing its own subclass.
+ * One of the {@link Icons} sprites, so buttons can take an icon as a parameter
+ * instead of each needing its own subclass.
  */
 @FunctionalInterface
 public interface Glyph {

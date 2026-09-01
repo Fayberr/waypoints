@@ -6,13 +6,11 @@ import net.minecraft.client.gui.screens.Screen;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Single source of truth for which settings screen opens: Fayber Config when installed, else the
- * Cloth Config screen, else the plain waypoints screen. Used by both the ModMenu entrypoint and
- * the Settings button in WaypointScreen.
+ * Which settings screen opens: fayberconfig if installed, else Cloth Config, else nothing.
+ * Used by both the ModMenu entrypoint and the Settings button in WaypointScreen.
  *
- * <p>Each concrete screen class is only referenced from its own branch AFTER the isModLoaded
- * check, so none of the optional mod's classes are classloaded when it is absent (all of them
- * are compileOnly dependencies).
+ * <p>Each screen class is only referenced after its isModLoaded check, so none of the
+ * optional mod's classes (all compileOnly deps) get classloaded when it is absent.
  */
 public final class ConfigScreenRouter {
     private ConfigScreenRouter() {}

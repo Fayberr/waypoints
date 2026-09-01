@@ -45,7 +45,6 @@ public class WaypointsClient implements ClientModInitializer {
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.withDefaultNamespace("waypoints"));
 
-        // Register keybindings
         openMenuKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.waypoints.open_menu",
                 InputConstants.Type.KEYSYM,
@@ -60,7 +59,6 @@ public class WaypointsClient implements ClientModInitializer {
                 category
         ));
 
-        // World connection lifecycle
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             WaypointStore.get().reload();
         });
@@ -69,26 +67,21 @@ public class WaypointsClient implements ClientModInitializer {
             WaypointStore.get().save();
         });
 
-        // In-World 3D Rendering hook (beam + label card). All card pieces are submitted as
-        // separate submit-order buckets from this single event so the GPU draw order is
-        // guaranteed (glow < card body < card text; see PinRenderer's class doc).
+        // In-world 3D rendering hook (beam + label card). Card pieces are submitted as separate
+        // submit-order buckets from this single event so the GPU draw order is guaranteed
+        // (glow < card body < card text; see PinRenderer).
         //
-        // MUST be COLLECT_SUBMITS, not END_MAIN. COLLECT_SUBMITS fires at the return of
-        // LevelRenderer#submitFeatures, i.e. while the submit-node collector is still being
-        // filled and before it is drained. END_MAIN fires at the end of the main pass, after
-        // both the solid and translucent feature batches have already been executed, so
-        // geometry submitted there misses this frame's draw and gets flushed outside the
-        // RenderSystem#getModelViewStack push that LevelRenderer#renderLevel makes to apply
-        // the camera view-rotation matrix. The net effect is geometry that keeps its
-        // translation but loses all camera rotation: the beam stays a dead-vertical line
-        // welded to the viewport (and even draws when the waypoint is behind you) instead of
-        // being real, perspective-correct, depth-tested world geometry.
+        // Has to be COLLECT_SUBMITS, not END_MAIN: COLLECT_SUBMITS fires while the submit-node
+        // collector is still being filled. END_MAIN fires after the feature batches have already
+        // been executed, so geometry submitted there misses this frame's draw and lands outside
+        // the RenderSystem#getModelViewStack push that applies the camera view-rotation. The net
+        // effect is geometry that keeps its translation but loses all camera rotation: the beam
+        // stays a dead-vertical line welded to the viewport instead of real world geometry.
         LevelRenderEvents.COLLECT_SUBMITS.register(WaypointRenderer::render);
 
-        // Xaero's World Map integration: adds our waypoints to the full-screen map as map
-        // elements. The compat class is only touched inside this branch so its Xaero imports stay
-        // unloaded when the World Map is not installed (it is a compileOnly dependency), and the
-        // catch keeps a future Xaero change from taking the whole mod down with it.
+        // Xaero's World Map integration. The compat class is only touched inside this branch so
+        // its Xaero imports stay unloaded when the World Map is not installed (compileOnly dep),
+        // and the catch keeps a future Xaero change from taking the whole mod down with it.
         if (FabricLoader.getInstance().isModLoaded("xaeroworldmap")) {
             try {
                 XaeroWorldMapCompat.register();
@@ -97,10 +90,9 @@ public class WaypointsClient implements ClientModInitializer {
             }
         }
 
-        // 2D HUD overlay hook (screen-edge pointer arrows for off-screen waypoints)
+        // 2D HUD overlay: screen-edge pointer arrows for off-screen waypoints.
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "waypoints_hud"), new WaypointHudElement());
 
-        // Tick events for key presses and death waypoint checks
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
@@ -115,8 +107,7 @@ public class WaypointsClient implements ClientModInitializer {
                 client.setScreen(new WaypointEditScreen(newWp, true));
             }
 
-            // Death waypoint auto-removal on approach (was previously exposed in the settings
-            // screen but never actually enforced anywhere).
+            // Death waypoint auto-removal on approach.
             ModConfig config = ConfigManager.get();
             if (config.deathWaypointEnabled && config.deathWaypointAutoRemove && client.level != null) {
                 String dim = client.level.dimension().identifier().toString();

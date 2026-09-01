@@ -23,23 +23,20 @@ import org.joml.Matrix4f;
  *
  * The card is drawn into submit-order buckets (all from COLLECT_SUBMITS, via WaypointRenderer).
  * Vanilla submits every feature into order bucket 0; the translucent feature stage executes
- * buckets in ascending order, and within one bucket it always draws text features before custom
- * geometry features. Because the see-through card and text do no depth testing at all
- * (that is what makes them render through walls), the ONLY thing that can layer one waypoint's
- * card over another's is draw order. So the buckets are allocated PER WAYPOINT, after sorting
+ * buckets in ascending order. Because the see-through card and text do no depth testing at all
+ * (that is what makes them render through walls), the only thing that can layer one waypoint's
+ * card over another's is draw order. So the buckets are allocated per waypoint, after sorting
  * the visible waypoints far to near (painter's algorithm), by WaypointRenderer:
  *
  *   bucket 0:      beam glow + depth underlays (and every other mod's order-0 translucents)
- *   bucket 2i+1:   card body (fill + border) of the i-th FARTHEST visible waypoint
+ *   bucket 2i+1:   card body (fill + border) of the i-th farthest visible waypoint
  *   bucket 2i+2:   that waypoint's card text (submitText)
  *
- * which guarantees, without any depth testing:
- *
- *   a nearer card draws over a farther card            (2i+3 > 2i+1)
- *   a nearer text draws over a farther text            (2i+4 > 2i+2)
- *   a nearer CARD draws over a farther card's TEXT     (2i+3 > 2i+2)  <- the front waypoint
- *   each text draws on top of its own card             (2i+2 > 2i+1)     fully occludes the
- *   the beam glow never blends over any card           (0 < 2i+1)        back one
+ * which guarantees, without any depth testing: a nearer card draws over a farther card (2i+3
+ * over 2i+1), nearer text over farther text (2i+4 over 2i+2), a nearer card over a farther
+ * card's text (2i+3 over 2i+2, so the front waypoint fully occludes the back one), each text
+ * on top of its own card (2i+2 over 2i+1), and the beam glow never blends over any card
+ * (0 below 2i+1).
  *
  * (In 26.1 the glow-vs-card draw order inside a single bucket was hash-arbitrary; separating
  * the buckets removes that nondeterminism entirely. It also works on 26.2, where per-bucket
@@ -204,22 +201,15 @@ public class PinRenderer {
 
     /**
      * Shared card transform: scale (with the on-screen min/max clamps), then a straight-up
-     * WORLD-space lift of the card center, then the billboard rotation and the vanilla nametag
+     * world-space lift of the card center, then the billboard rotation and the vanilla nametag
      * scale recipe (scale(s, -s, s), verified against NameTagFeatureRenderer$Storage in 26.1).
      *
-     * <p>The natural on-screen scale factor is pure perspective (base/dist). Two clamps bound it
-     * on both ends, both expressed as multipliers of the "held" size the card settles at past
+     * <p>The natural on-screen scale factor is pure perspective (base/dist). Two clamps bound it,
+     * both expressed as multipliers of the "held" size the card settles at past
      * labelScaleDistance (base/labelScaleDistance), so minScale=1.0 reproduces the old far hold
-     * exactly:
-     *
-     * <ul>
-     *   <li><b>Max (close):</b> perspective would blow the card up right next to it; capping the
-     *       on-screen factor at held*labelMaxScale keeps it at a fixed on-screen size closer than
-     *       labelScaleDistance/labelMaxScale blocks.
-     *   <li><b>Min (far):</b> flooring the on-screen factor at held*labelMinScale lets the card
-     *       keep shrinking past the hold down to that floor (minScale &lt; 1) or hold a bigger
-     *       readable size (minScale &gt; 1).
-     * </ul>
+     * exactly. Max (close): perspective would blow the card up right next to it, so the factor is
+     * capped at held*labelMaxScale. Min (far): the factor is floored at held*labelMinScale, so
+     * the card keeps shrinking to that floor (minScale below 1) or holds a bigger readable size.
      *
      * <p>The lift grows with the scale, so the card's on-screen offset above the beam stays
      * constant inside a clamped zone too. pinScale and textScale scale the whole card as one

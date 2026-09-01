@@ -13,13 +13,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A button that is its own card: rounded dark surface, hairline border, optional leading glyph,
- * centred label.
- *
- * <p>Two weights, and neither of them is an accent colour: {@link Style#GHOST} is the standard dark
- * card, {@link Style#STRONG} is a near-white fill used for the one confirming action on a screen.
+ * centred label. Two weights, neither an accent colour: {@link Style#GHOST} is the standard dark
+ * card, {@link Style#STRONG} is the near-white fill for the one confirming action on a screen.
  *
  * <p>{@link AbstractButton#extractWidgetRenderState} is final but only dispatches to
- * {@link #extractContents}, so overriding that fully replaces the vanilla sprite rendering while
+ * {@link #extractContents}, so overriding that replaces the vanilla sprite rendering while
  * keeping click sounds, enter/space activation and narration.
  */
 public class CardButton extends AbstractButton {

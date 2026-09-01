@@ -66,9 +66,8 @@ public class WaypointStore {
     }
 
     /**
-     * Keeps only the {@code maxCount} most recent death waypoints, removing older ones.
-     * Without this, "Max Death Waypoints" in settings only ever behaved correctly for a value
-     * of 1 (clear-before-add); any higher value silently let death waypoints accumulate forever.
+     * Keeps only the {@code maxCount} most recent death waypoints. Without this, settings values
+     * above 1 silently let death waypoints accumulate forever (clear-before-add only worked for 1).
      */
     public synchronized void trimDeathWaypoints(int maxCount) {
         List<Waypoint> deaths = waypoints.stream()

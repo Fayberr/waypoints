@@ -14,11 +14,9 @@ import java.util.Locale;
 
 /**
  * The wide card in the middle of a waypoint row: a pin in the waypoint's own colour, its name, and
- * its coordinates plus dimension underneath. Pressing it opens the edit screen.
- *
- * <p>The waypoint's colour is the only colour on the whole screen, which is the point: everything
- * else is neutral grey, so the eye goes straight to the pins. A hidden waypoint is drawn muted so
- * the list still reads at a glance.
+ * its coordinates plus dimension underneath. Pressing it opens the edit screen. The waypoint's
+ * colour is the only colour on the whole screen, so the eye goes straight to the pins; a hidden
+ * waypoint is drawn muted.
  */
 public class WaypointCard extends AbstractButton {
     private static final int PAD_X = 11;

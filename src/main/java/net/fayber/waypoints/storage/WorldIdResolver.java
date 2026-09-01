@@ -12,20 +12,17 @@ public class WorldIdResolver {
             return "default_world";
         }
 
-        // Singleplayer
         IntegratedServer singleplayer = mc.getSingleplayerServer();
         if (singleplayer != null) {
             String levelName = singleplayer.getWorldData().getLevelName();
             return "sp_" + sanitize(levelName);
         }
 
-        // Multiplayer Dedicated Server
         ServerData serverData = mc.getCurrentServer();
         if (serverData != null) {
             return "mp_" + sanitize(serverData.ip);
         }
 
-        // Fallback
         return "default_world";
     }
 

@@ -14,17 +14,13 @@ import java.util.List;
 
 /**
  * The scrolling body of {@link WaypointScreen}: one row per waypoint, each row a strip of separate
- * cards (show/hide, the waypoint itself, teleport, delete) rather than one big container card.
- *
- * <p>All the vanilla list chrome is switched off (background, row separators, sprite scrollbar) and
+ * cards (show/hide, the waypoint itself, teleport, delete) rather than one big container card. All
+ * the vanilla list chrome is switched off (background, row separators, sprite scrollbar) and
  * replaced with a slim rounded scrollbar, so the rows float directly on the dimmed world.
  *
  * <p>Mouse-wheel scrolling has momentum, because vanilla's is instant: the wheel adds velocity and
- * the position coasts with an exponential decay, the way a website eases a wheel step to rest.
- * One notch travels {@code scrollRate()} pixels in total, but spread over a fraction of a second
- * of deceleration instead of snapping there; fast spins accumulate velocity (capped). The decay is
- * time-normalised, so the feel is identical at any frame rate. Scrollbar drags and keyboard
- * navigation cancel the glide and stay 1:1 with the pointer.
+ * the position coasts with a time-normalised exponential decay, so the feel is identical at any
+ * frame rate. Scrollbar drags and keyboard navigation cancel the glide and stay 1:1.
  *
  * <p>Vanilla positions rows at {@code firstEntryY - (int) scrollAmount} and derives the thumb from
  * an integer division: both drop the fraction of the scroll amount, which turns any fractional

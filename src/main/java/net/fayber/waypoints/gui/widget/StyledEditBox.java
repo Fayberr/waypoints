@@ -14,13 +14,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A text field that sits in its own card instead of vanilla's beveled sprite frame.
  *
- * <p>Vanilla only offers the sprite border or nothing, so this turns the border off
- * ({@code setBordered(false)}) and draws the card itself. With the border off, EditBox places its
- * text at exactly {@code (getX(), getY())}, so the widget is positioned at the <em>text origin</em>
- * and the card rectangle is tracked separately: {@link #isMouseOver} is widened back to the card so
- * clicking the padding still focuses the field.
- *
- * <p>A focused field is marked by a lighter border, not a colour, so the screens stay accent-free.
+ * <p>With the border off, EditBox places its text at exactly {@code (getX(), getY())}, so the
+ * widget sits at the text origin and the card rectangle is tracked separately. {@link #isMouseOver}
+ * is widened back to the card so clicking the padding still focuses the field.
  */
 public class StyledEditBox extends EditBox {
     /** Glyph height and font glyph height vanilla centres against. */
@@ -52,12 +48,11 @@ public class StyledEditBox extends EditBox {
         this.setTextShadow(false);
         this.setTextColor(Theme.TEXT);
         this.setTextColorUneditable(Theme.TEXT_MUTED);
-        // The typed value is rendered by EditBox itself with Style.EMPTY (the vanilla font), which
-        // clashes with the styled hint beside it. The formatter hook (first non-null result wins,
-        // vanilla falls back to Style.EMPTY) lets the value ride the UI font like everything else.
+        // EditBox renders the typed value with Style.EMPTY (the vanilla font), which clashes with
+        // the styled hint beside it. The formatter hook lets the value ride the UI font.
         this.addFormatter((text, pos) -> FormattedCharSequence.forward(text, Ui.uiStyle()));
-        // Re-derive the text origin now that the border is off: with bordered == false EditBox puts
-        // the text at getX()/getY() verbatim, so the widget origin IS the text origin.
+        // With bordered == false EditBox puts the text at getX()/getY() verbatim, so the widget
+        // origin IS the text origin.
         int textLeft = this.textLeft();
         this.setX(textLeft);
         this.setY(cardY + (cardH - GLYPH_HEIGHT) / 2);
@@ -69,10 +64,7 @@ public class StyledEditBox extends EditBox {
         return this.cardX + PAD_X + (this.leading != null ? Math.round(ICON_SIZE) + 6 : 0);
     }
 
-    /**
-     * The card's top edge. The widget's own {@code getY()} is the text baseline box, not the card,
-     * so screens that want to put a label above the field ask for this instead.
-     */
+    /** The card's top edge. The widget's own {@code getY()} is the text box, not the card. */
     public int getCardY() {
         return this.cardY;
     }

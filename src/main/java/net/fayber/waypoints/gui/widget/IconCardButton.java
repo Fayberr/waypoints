@@ -14,10 +14,8 @@ import java.util.function.Supplier;
 
 /**
  * A square card holding a single {@link Glyph}: the compact action buttons on a waypoint row
- * (show/hide, teleport, delete).
- *
- * <p>The glyph is supplied lazily so a button can change what it draws with the model (the
- * visibility button swaps between the open and crossed-out eye) without being rebuilt.
+ * (show/hide, teleport, delete). The glyph is supplied lazily so the visibility button can
+ * swap between the open and crossed-out eye without being rebuilt.
  */
 public class IconCardButton extends AbstractButton {
     /** Glyph box as a fraction of the card, so the icon keeps its padding at any size. */

@@ -11,23 +11,20 @@ import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
 /**
- * Renders the waypoint beam as a true round 3D cylinder (a ring of N side-quads), not the
- * vanilla beacon's "two crossed flat planes" illusion (which only looks 3D from a narrow range
- * of angles and is flat/fake-looking from above or from a shallow angle). It also uses our own
- * blank white texture instead of vanilla's animated beacon-beam stripe texture, so the beam's
- * appearance is fully custom (solid per-waypoint color with a smooth fade), not "the Minecraft
- * beacon."
+ * Renders the waypoint beam as a true round 3D cylinder (a ring of N side-quads), not the vanilla
+ * beacon's "two crossed flat planes" illusion, which looks flat from above or a shallow angle.
+ * Uses our own blank white texture instead of vanilla's animated beacon-beam stripe texture, so
+ * the beam is a solid per-waypoint color with a smooth fade.
  *
- * The render-state plumbing (RenderTypes.beaconBeam, depth test, blending, no-cull) is kept
- * identical to vanilla's own beacon beam because that render type is proven to behave correctly
- * as real, depth-tested, properly-occluded 3D world geometry - only the mesh shape and texture
- * are custom.
+ * The render-state plumbing (RenderTypes.beaconBeam, depth test, blending, no-cull) stays
+ * identical to vanilla's own beacon beam because that render type behaves correctly as real,
+ * depth-tested, occluded world geometry. Only the mesh shape and texture are custom.
  */
 public class BeamRenderer {
     private static final Identifier BEAM_TEXTURE = Identifier.fromNamespaceAndPath("waypoints", "textures/environment/beam.png");
 
-    // Sides on the cylinder ring. Higher = rounder. 20 is smooth without being expensive - this
-    // only renders for waypoints that are visible and within render distance.
+    // Sides on the cylinder ring. 20 is smooth without being expensive; this only renders for
+    // waypoints that are visible and within render distance.
     private static final int SIDES = 20;
 
     public static void renderBeam(PoseStack poseStack, SubmitNodeCollector collector, Waypoint wp, ModConfig config) {
@@ -44,9 +41,9 @@ public class BeamRenderer {
 
         // The pose origin is the centre of the waypoint's block. Base the beam just inside the
         // ground (1 block below the anchor) and fade in over 1 block, so the fade completes
-        // underground: at the surface the beam is already fully opaque and reads as standing on
-        // the block. The old beam spanned y-128 with a long see-through fade, which made the
-        // cylinder's translucent far-wall rim ghost through the floor as a scalloped arch.
+        // underground: at the surface the beam is already fully opaque. The old beam spanned
+        // y-128 with a long see-through fade, which made the cylinder's translucent far-wall rim
+        // ghost through the floor as a scalloped arch.
         float minY = -1.0f;
         float maxY = config.beaconHeight;
 
@@ -76,15 +73,14 @@ public class BeamRenderer {
         float topFadeStart = maxY - topFade;
 
         if (topFadeStart <= bottomFadeEnd) {
-            // Degenerate/very short beam: fall back to a single top-only fade so we don't emit
-            // an inverted or zero-height segment.
+            // Degenerate/very short beam: single top-only fade so we don't emit an inverted
+            // or zero-height segment.
             addRing(mat, consumer, r, g, b, radius, minY, a, maxY, 0.0f);
             return;
         }
 
         // Bottom fade-in (short, tucked inside the ground block)
         addRing(mat, consumer, r, g, b, radius, minY, 0.0f, bottomFadeEnd, a);
-        // Solid middle
         addRing(mat, consumer, r, g, b, radius, bottomFadeEnd, a, topFadeStart, a);
         // Top fade-out
         addRing(mat, consumer, r, g, b, radius, topFadeStart, a, maxY, 0.0f);
@@ -93,12 +89,11 @@ public class BeamRenderer {
     /**
      * Emits one ring of SIDES quads (a true cylindrical band) between y0 and y1.
      *
-     * Vertex order matters: the beacon-beam pipelines cull back faces (verified in the 26.1
-     * RenderPipelines disassembly - no withCull(false) opt-out), so the quads must be wound
-     * with their front faces pointing OUTWARD from the cylinder axis. The previous order wound
-     * them inward, which culled the near wall from outside and left only the far wall's interior
-     * visible ("half a cylinder, I only see the inside"), and let the interior show through
-     * terrain gaps at the base.
+     * Vertex order matters: the beacon-beam pipelines cull back faces (no withCull(false)
+     * opt-out in the 26.1 RenderPipelines), so the quads must be wound with their front faces
+     * pointing outward from the cylinder axis. The previous order wound them inward, which
+     * culled the near wall and left only the far wall's interior visible, and let the interior
+     * show through terrain gaps at the base.
      */
     private static void addRing(Matrix4f mat, VertexConsumer consumer, float r, float g, float b, float radius, float y0, float a0, float y1, float a1) {
         for (int i = 0; i < SIDES; i++) {

@@ -21,10 +21,9 @@ import java.time.format.DateTimeFormatter;
 @Mixin(DeathScreen.class)
 public class DeathScreenMixin {
 
-    // Injected into the constructor (not init()) because Screen#init() also re-runs on every
-    // window resize while the screen is open (e.g. alt-tab, F11) - a HEAD inject on init() would
-    // silently create a fresh duplicate death waypoint on every resize. The constructor runs
-    // exactly once per DeathScreen instance, i.e. exactly once per death.
+    // Injected into the constructor, not init(): init() re-runs on every window resize while the
+    // screen is open, which would create a duplicate death waypoint per resize. The constructor
+    // runs exactly once per death.
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onDeathScreenCreated(Component causeOfDeath, boolean hardcore, LocalPlayer player, CallbackInfo ci) {
         ModConfig config = ConfigManager.get();
